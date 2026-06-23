@@ -149,8 +149,10 @@ class LogFileAnalyzer() {
     // 查看目录中所有日志文件的文件名
     IReadOnlyList<string> GetLogFiles();
     // 开启 `degreeOfParallelism` 个并行任务，解析全部日志文件
+    // `degreeOfParallelism` 为 0 表示并行任务数与逻辑处理器个数相同
     void AnalyzeAll(int degreeOfParallelism);
     // 开启 `degreeOfParallelism` 个并行任务，解析指定的文件名为 fileNames 的这些文件
+    // `degreeOfParallelism` 为 0 表示并行任务数与逻辑处理器个数相同
     void AnalyzeFiles(int degreeOfParallelism, IEnumerable<string> fileNames);
     // 获取文件名为 `fileName` 文件的解析结果，如果有则存入 `result` 中并返回 true，否则返回 `false`
     bool TryGetAnalysisResult(string fileName, out AnalysisResult? result);
