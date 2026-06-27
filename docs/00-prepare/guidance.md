@@ -283,7 +283,25 @@ dotnet test -c Release
 
 ## 作业提交
 
-本节为准备环节，你无须进行作业提交。但本节将会介绍以后的作业提交方式。
+本节为准备环节，你无须进行作业提交。但本节将会介绍以后的作业要求和提交方式。
+
+### 作业要求
+
+为了达到较好的训练效果，建议同学们独立完成作业，并借助必要的工具，如搜索引擎、AI 大模型等等，获取自己不了解的知识进行学习和探索，提升自己的开发能力。
+
+每一节的作业分为代码作业的问答作业，具体的作业要求、难易度和得分将会在每一章的 `guidance.md` 和 `tasks.md` 中说明。
+
+> [!IMPORTANT]
+>
+> **关于大模型的使用**
+>
+> 大模型的出现固然为我们提供了一个提高效率的重要渠道，学会合理使用大模型也是我们在未来的软件开发中一定要掌握的技能之一。但过于依赖大模型，也存在一些弊端。
+>
+> 对于代码作业，过于依赖大模型会让我们失去锻炼开发能力、熟悉 .NET 技术栈的机会，建议同学们先要有自己的思考，让大模型成为自己了解未知、让自己的想法更加完美的工具。同时，因为大模型生成的内容未必准确，因此对大模型生成的内容一定要有自己的辨别能力。
+>
+> 对于问答作业，尤其是最后的实验报告，不加思考地完全使用大模型生成的文本具有严重的 AI 味道，最大特点在于 **「假大空」、华而不实、无脑尬吹、文档可读性极差** 。这除了会造成失去锻炼的机会之外，得到作业展现效果也不会好，对批阅的讲师也是一种痛苦。因此， **对一眼看出是完全依赖大模型一股脑生成的劣质文档，将作为无效文档处理** 。当然，如果同学能依靠大模型让自己的文档变得更优质，自然是十分鼓励的。而且，对文档质量的鉴别与修改能力（无论是人写的还是大模型生成的），也是一种十分重要的技能。
+
+### 提交方式
 
 本工程中，每一个章节对应一个单独的 Git 分支。分支如下：
 
@@ -303,7 +321,7 @@ dotnet test -c Release
 - 关联 PR 到对应 issue
 - 查看作业批改结果
 
-### i) 本地修改对应分支
+#### i) 本地修改对应分支
 
 Fork 本仓库所有分支后，在本地切换到对应分支进行修改：
 
@@ -317,27 +335,36 @@ git checkout "feat/01-basic"
 git checkout -b "feat/01-basic"
 ```
 
-如果你想把其他分支的修改合并到当前分支，例如你在开发 `01-basic` 时修改了一些内容，想把修改同步到 `02-multithreading`，可以在 `feat/02-multithreading` 分支执行命令：
+如果你想把其他分支的修改合并到当前分支，例如你在开发 `01-basic` 时修改了一些内容，想把修改更新到 `02-multithreading`，可以在进入 `feat/02-multithreading` 分支后执行命令：
 
 ```shell
 git merge "feat/01-basic"
 ```
 
-### ii) 提交修改到对应分支
+即可从 `feat/01-basic` 拉取更改合并到  `feat/02-multithreading` 分支。
 
-完成修改并 git commit 后，将改动提交到本地并推送到云端 fork 仓库：
+#### ii) 提交修改到对应分支
+
+完成代码编写与修改后，你需要使用 Git 将更改进行 commit，要求 commit message 使用 [规范化提交](https://www.conventionalcommits.org/zh-hans/)（一些编辑器的扩展程序例如 Visual Studio Code 的 [Conventional Commits 插件](https://marketplace.visualstudio.com/items?itemName=vivaxy.vscode-conventional-commits) 可以帮助您进行规范化提交）：
+
+```shell
+git add <files>
+git commit -m "<commit-message>"
+```
+
+并 git commit 后，将改动提交到本地并推送到云端 fork 仓库：
 
 ```shell
 git push origin "feat/01-basic"
 ```
 
-### iii) 向本仓库对应分支提交 PR
+#### iii) 向本仓库对应分支提交 PR
 
 打开在 GitHub 上 fork 的仓库页面后，切换到刚刚推送的对应分支（如 `feat/01-basic`）
 
 点击“Compare & Pull Request”按钮，并在 PR 创建页面填写相关信息
 
-### iv) 关联 PR 到对应 Issue
+#### iv) 关联 PR 到对应 Issue
 
 在 PR 模板填写界面，需手动关联 PR 到对应 issue。
 
@@ -353,11 +380,35 @@ git push origin "feat/01-basic"
 
 关联完成后，提交 PR，则作业提交完毕。
 
-### 查看作业批改结果
+#### v) 查看作业批改结果
+
+当你提出 PR 后，GitHub Actions 会自动运行，检查你的提交是否符合要求，以及是否通过该章节的单元测试。你的 PR 只有在通过了全部检查后（显示 All checks have passed），讲师才会进行批改，如下图所示：
+
+![pass-ci](./assets/pass-ci.png)
+
+
 
 作业由讲师批改后，对应 PR 会被打上标签：
 
 - accepted ✅：作业通过，PR 会被关闭。
 - require revision 🔄：需要修改，PR 保持 open 状态。
 
-若需修改，按 PR 下方的评论提示进行更改，然后重复 步骤 ii 提交更新。
+若检查未通过或讲师要求修改，则需点击未通过的检查来查看出错位置，或按 PR 下方的评论区按照讲师的提示进行更改，然后重复 步骤 ii 提交更新。
+
+## 其他
+
+关于本工程的全部任务概览，参看 [tasks.md](./tasks.md)。
+
+**衷心祝愿大家学习愉快，收获满满！**
+
+## 拓展阅读
+
++ [测试：单元测试、测试驱动的开发（TDD）](https://docs.eesast.com/docs/tools/tdd)
++ [版本管理与 Git 基础](https://docs.eesast.com/docs/tools/git)
++ [计算机教育中缺失的一课](https://missing-semester-cn.github.io/)
+
+## 前进 / 后退
+
++ 上一篇：[README](../../README.md)
++ 下一篇：[Tasks in Preparation](./task.md)
+

@@ -24,9 +24,25 @@
 
 本工程的全部文档位于 `docs/` 目录中。首先，同学应当阅读 `docs/00-prepare` 中的文档，进行环境准备与背景了解，以及作业的提交方式。随后，按照数字顺序依次阅读该章节下的指引（`guidance.md`）并完成任务（`tasks.md`）。
 
++ `00-prepare`
+  + [Guidance](./docs/00-prepare/guidance.md)
+  + [Tasks](./docs/00-prepare/tasks.md)
++ `01-basic`
+  + [Guidance](./docs/01-basic/guidance.md)
+  + [Tasks](./docs/01-basic/tasks.md)
++ `02-multithreading`
+  + [Guidance](./docs/02-multithreading/guidance.md)
+  + [Tasks](./docs/02-multithreading/tasks.md)
++ `03-async-grpc`
+  + [Guidance](./docs/03-async-grpc/guidance.md)
+  + [Tasks](./docs/03-async-grpc/tasks.md)
++ `04-avalonia`
+  + [Guidance](./docs/04-avalonia/guidance.md)
+  + [Tasks](./docs/04-avalonia/tasks.md)
+
 ## 后记
 
-本项目受到 [FranGuam](https://github.com/FranGuam) 编写的 [web-workshop](https://github.dev/eesast/web-workshop) 启发，在此表示感谢。
+本项目受到 [FranGuam](https://github.com/FranGuam) 编写的 [web-workshop](https://github.com/eesast/web-workshop) 启发，在此表示感谢。
 
 关于开发当中的经历和感悟 ，以及开发幕后的故事和花絮，欢迎阅读 [开发札记](./DEVLOG.md)。
 
