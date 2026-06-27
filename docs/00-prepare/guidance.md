@@ -308,13 +308,19 @@ dotnet test -c Release
 Fork 本仓库所有分支后，在本地切换到对应分支进行修改：
 
 ```shell
-git checkout “feat/01-basic”
+git checkout "feat/01-basic"
 ```
 
 如果发现分支不存在，则应当使用 `-b` 进行创建：
 
 ```shell
-git checkout -b “feat/01-basic”
+git checkout -b "feat/01-basic"
+```
+
+如果你想把其他分支的修改合并到当前分支，例如你在开发 `01-basic` 时修改了一些内容，想把修改同步到 `02-multithreading`，可以在 `feat/02-multithreading` 分支执行命令：
+
+```shell
+git merge "feat/01-basic"
 ```
 
 ### ii) 提交修改到对应分支
