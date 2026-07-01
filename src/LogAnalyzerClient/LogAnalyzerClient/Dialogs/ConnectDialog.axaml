@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="LogAnalyzerClient.ConnectDialog"
+        d:DesignWidth="440" d:DesignHeight="180"
+        Width="440" Height="180"
+        CanResize="False" WindowStartupLocation="CenterOwner"
+        Title="Connect...">
+    <StackPanel Margin="15" Spacing="10">
+        <TextBlock Text="Please input the address of Agent:" />
+        <TextBox Name="AddressTextBox"
+                 PlaceholderText="e.g. http://localhost:5000" />
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="5">
+            <Button Classes="PrimaryButton"
+                    Content="Connect"
+                    IsDefault="True"
+                    Click="ConnectButton_Click" />
+            <Button Classes="SecondaryButton"
+                    Content="Cancel"
+                    Click="CancelButton_Click" />
+        </StackPanel>
+    </StackPanel>
+</Window>

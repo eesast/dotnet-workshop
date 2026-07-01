@@ -1,3 +1,63 @@
 <Solution>
+  <Folder Name="/DataGen/">
+    <File Path="DataGen/.gitignore" />
+    <File Path="DataGen/batch.py" />
+    <File Path="DataGen/gen.py" />
+  </Folder>
+  <Folder Name="/dataset/">
+    <File Path="dataset/basic-multiple.log" />
+    <File Path="dataset/basic.log" />
+  </Folder>
+  <Folder Name="/dataset/multiple-logs/">
+    <File Path="dataset/multiple-logs/20260701.log" />
+    <File Path="dataset/multiple-logs/20260702.log" />
+    <File Path="dataset/multiple-logs/20260703.log" />
+    <File Path="dataset/multiple-logs/20260704.log" />
+    <File Path="dataset/multiple-logs/20260705.log" />
+    <File Path="dataset/multiple-logs/20260706.log" />
+    <File Path="dataset/multiple-logs/20260707.log" />
+    <File Path="dataset/multiple-logs/20260708.log" />
+    <File Path="dataset/multiple-logs/20260709.log" />
+    <File Path="dataset/multiple-logs/20260710.log" />
+    <File Path="dataset/multiple-logs/20260711.log" />
+    <File Path="dataset/multiple-logs/20260712.log" />
+    <File Path="dataset/multiple-logs/20260713.log" />
+    <File Path="dataset/multiple-logs/20260714.log" />
+    <File Path="dataset/multiple-logs/20260715.log" />
+    <File Path="dataset/multiple-logs/20260716.log" />
+    <File Path="dataset/multiple-logs/20260717.log" />
+    <File Path="dataset/multiple-logs/20260718.log" />
+    <File Path="dataset/multiple-logs/20260719.log" />
+    <File Path="dataset/multiple-logs/20260720.log" />
+    <File Path="dataset/multiple-logs/20260721.log" />
+    <File Path="dataset/multiple-logs/20260722.log" />
+    <File Path="dataset/multiple-logs/20260723.log" />
+    <File Path="dataset/multiple-logs/20260724.log" />
+    <File Path="dataset/multiple-logs/20260725.log" />
+    <File Path="dataset/multiple-logs/20260726.log" />
+    <File Path="dataset/multiple-logs/20260727.log" />
+    <File Path="dataset/multiple-logs/20260728.log" />
+    <File Path="dataset/multiple-logs/20260729.log" />
+    <File Path="dataset/multiple-logs/20260730.log" />
+  </Folder>
+  <Folder Name="/LogAnalyzerClient/">
+    <Project Path="LogAnalyzerClient/LogAnalyzerClient.Browser/LogAnalyzerClient.Browser.csproj" />
+    <Project Path="LogAnalyzerClient/LogAnalyzerClient.Desktop/LogAnalyzerClient.Desktop.csproj" />
+    <Project Path="LogAnalyzerClient/LogAnalyzerClient/LogAnalyzerClient.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+  </Folder>
+  <Project Path="ConsoleTest/ConsoleTest.csproj" Id="11187506-c3c1-4c3d-9e72-2b01def016ec" />
+  <Project Path="LocalCli/LocalCli.csproj" Id="5ebb0407-d263-47b4-9b44-07cc55df9263" />
+  <Project Path="LogAnalyzer/LogAnalyzer.csproj" />
+  <Project Path="LogAnalyzerAgent/LogAnalyzerAgent.csproj" Id="b2acce85-bc70-4f63-a57f-2c095e5ecf94" />
+  <Project Path="LogAnalyzerRpc/LogAnalyzerRpc.csproj" Id="1ca63d5e-669f-4d31-8cd7-1afef72a33fd" />
+  <Project Path="LogParser/LogParser.csproj" Id="7aadd0d2-0829-4b5b-875c-4d49394f1a8e" />
+  <Project Path="RemoteCli/RemoteCli.csproj" Id="31a1187b-559e-4163-a0c8-f2100de8bb10" />
   <Project Path="test-00-prepare/test-00-prepare.csproj" />
+  <Project Path="test-01-basic/test-01-basic.csproj" Id="3258a742-56c9-4e9f-9963-13d36686b139" />
+  <Project Path="test-02-multithreading/test-02-multithreading.csproj" />
+  <Project Path="test-03-async-grpc/test-03-async-grpc.csproj" Id="0f989071-b836-4853-92e0-35880575c43c" />
+  <Project Path="TestUtils/TestUtils.csproj" Id="66bda0a1-510c-4f93-b4d6-d6eeb0855347" />
 </Solution>

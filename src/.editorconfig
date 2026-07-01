@@ -1,0 +1,5 @@
+# C# files
+[*.cs]
+
+# Warnings
+dotnet_diagnostic.MSTEST0045.severity = none

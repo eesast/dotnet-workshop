@@ -1,0 +1,152 @@
+﻿syntax = "proto3";
+
+option csharp_namespace = "LogAnalyzerRpc.Protos";
+
+package log_analyzer.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service LogAnalyzerAgentService {
+	rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+	rpc GetAgentStatus(google.protobuf.Empty) returns (GetAgentStatusResponse);
+	rpc ChangeDirectory(ChangeDirectoryRequest) returns (ChangeDirectoryResponse);
+	rpc GetLogFiles(google.protobuf.Empty) returns (GetLogFilesResponse);
+	rpc AnalyzeAll(AnalyzeAllRequest) returns (AnalyzeAllResponse);
+	rpc AnalyzeFiles(AnalyzeFilesRequest) returns (AnalyzeFilesResponse);
+	rpc GetAnalysisResult(GetAnalysisResultRequest) returns (stream GetAnalysisResultResponse);
+}
+
+enum AgentErrorCode {
+  NO_AGENT_ERROR = 0;
+  INVALID_ARGUMENT = 1;
+  DIRECTORY_NOT_FOUND = 2;
+  FILE_NOT_FOUND = 3;
+  INVALID_OPERATION = 4;
+  INTERNAL_ERROR = 5;
+}
+
+message OperationStatusMessage {
+  bool success = 1;
+  AgentErrorCode code = 2;
+  string message = 3;
+}
+
+message GetAgentStatusResponse {
+  OperationStatusMessage status = 1;
+  bool has_directory = 2;
+  string current_directory = 3;
+  bool is_analyzing = 4;
+  repeated string file_names = 5;
+}
+
+message ChangeDirectoryRequest {
+  string directory_path = 1;
+}
+
+message ChangeDirectoryResponse {
+  OperationStatusMessage status = 1;
+  string current_directory = 2;
+  repeated string file_names = 3;
+}
+
+message GetLogFilesResponse {
+  OperationStatusMessage status = 1;
+  repeated string file_names = 3;
+}
+
+message AnalyzeAllRequest {
+  int32 degree_of_parallelism = 1;
+}
+
+message AnalyzeAllResponse {
+  OperationStatusMessage status = 1;
+}
+
+message AnalyzeFilesRequest {
+  int32 degree_of_parallelism = 1;
+  repeated string file_names = 2;
+}
+
+message AnalyzeFilesResponse {
+  OperationStatusMessage status = 1;
+}
+
+message GetAnalysisResultRequest {
+  string file_name = 1;
+}
+
+enum AnalysisStateEnum {
+	NOT_ANALYZED = 0;
+	SUCCEEDED = 1;
+	FAILED = 2;
+}
+
+message AnalysisResultHeaderMessage {
+	string file_name = 1;
+	string full_name = 2;
+	AnalysisStateEnum state = 3;
+	optional string error_message = 4;
+	int32 worker_id = 5;
+}
+
+enum LogSeverityEnum {
+  INFO = 0;
+  WARNING = 1;
+  ERROR = 2;
+}
+
+enum LogEventTypeEnum {
+  CALL = 0;
+  REQUEST = 1;
+  INTERNAL = 2;
+}
+
+message CallLogEntryMessage {
+	int32 line_no = 1;
+	google.protobuf.Timestamp timestamp = 2;
+	string pod_name = 3;
+	LogSeverityEnum severity = 4;
+	LogEventTypeEnum event_type = 5;
+	string request_id = 6;
+	string target_service = 7;
+	int32 duration_ms = 8;
+}
+
+message RequestLogEntryMessage {
+	int32 line_no = 1;
+	google.protobuf.Timestamp timestamp = 2;
+	string pod_name = 3;
+	LogSeverityEnum severity = 4;
+	LogEventTypeEnum event_type = 5;
+	string request_id = 6;
+	string method = 7;
+	string path = 8;
+	int32 status_code = 9;
+}
+
+message InternalLogEntryMessage {
+	int32 line_no = 1;
+	google.protobuf.Timestamp timestamp = 2;
+	string pod_name = 3;
+	LogSeverityEnum severity = 4;
+	LogEventTypeEnum event_type = 5;
+	string exception_name = 6;
+	string exception_message = 7;
+}
+
+message LogEntryMessage {
+	oneof entry {
+		CallLogEntryMessage call_log_entry = 1;
+		RequestLogEntryMessage request_log_entry = 2;
+		InternalLogEntryMessage internal_log_entry = 3;
+	};
+}
+
+message GetAnalysisResultResponse {
+	oneof payload {
+		AnalysisResultHeaderMessage header = 1;
+		LogEntryMessage log_entry = 2;
+	}
+	OperationStatusMessage status = 3;
+}

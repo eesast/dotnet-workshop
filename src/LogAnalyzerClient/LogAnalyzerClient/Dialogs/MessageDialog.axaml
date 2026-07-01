@@ -1,0 +1,25 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        x:Class="LogAnalyzerClient.MessageDialog"
+        d:DesignWidth="400" d:DesignHeight="200"
+        Width="480" Height="220"
+        CanResize="False" WindowStartupLocation="CenterOwner">
+    <Grid Margin="10" RowDefinitions="Auto,*,Auto" RowSpacing="10">
+        <TextBlock Grid.Row="0" Name="TitleTextBlock"
+                   Classes="DialogTitle" />
+        <ScrollViewer Grid.Row="1">
+            <TextBlock Name="MessageTextBlock"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextAlignment="Left"
+                       TextWrapping="Wrap" />
+        </ScrollViewer>
+        <Button Grid.Row="2"
+                Classes="PrimaryButton"
+                Content="OK"
+                HorizontalAlignment="Right"
+                Click="OkButton_Click" />
+    </Grid>
+</Window>
