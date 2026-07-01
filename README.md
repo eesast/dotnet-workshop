@@ -39,10 +39,13 @@
 + `04-avalonia`
   + [Guidance](./docs/04-avalonia/guidance.md)
   + [Tasks](./docs/04-avalonia/tasks.md)
++ `05-advanced`
+  + [Guidance](./docs/05-advanced/guidance.md)
+  + [Tasks](./docs/05-advanced/tasks.md)
 
 ## 后记
 
-本项目受到 [FranGuam](https://github.com/FranGuam) 编写的 [web-workshop](https://github.com/eesast/web-workshop) 启发，在此表示感谢。
+本项目受到 [FranGuam](https://github.com/FranGuam) 编写的 [web-workshop](https://github.com/eesast/web-workshop) 启发，并在任务设计上部分参考了 [MIT 6.5840: Spring 2023](http://nil.csail.mit.edu/6.5840/2023/index.html)，在此表示感谢。
 
 关于开发当中的经历和感悟 ，以及开发幕后的故事和花絮，欢迎阅读 [开发札记](./DEVLOG.md)。
 

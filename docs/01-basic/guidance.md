@@ -523,7 +523,20 @@ public abstract record LogEntry {
 
 如果使用了 AI，你给予 AI 的提示词是什么？你认为 AI 给出的解答、你完全凭借传统搜索引擎以及自己的能力能够写出的解答之间，AI 的解答比你好在哪？AI 又有哪些解答是存在问题的，或者至少是不如你自己的解答的？给出你的理由。
 
+## 其他
 
+关于本节的任务分值等信息，参看 [tasks.md](./tasks.md)。
+
+## 拓展阅读
+
+未完待续……
+
+## 前进 / 后退
+
++ 上一篇：[Tasks in Preparation](../00-prepare/tasks.md)
++ 下一篇：[Tasks in Basic Functions](./tasks.md)
+
+## 参考文献
 
 [^1]: He S, Zhang X, He P, et al. An empirical study of log analysis at Microsoft[C]//Proceedings of the 30th ACM Joint European Software Engineering Conference and Symposium on the Foundations of Software Engineering. 2022: 1465-1476.
 

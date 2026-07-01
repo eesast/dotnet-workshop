@@ -66,7 +66,7 @@ void thread() {
 }
 ```
 
-#### 生产者消费者问题、管程与条件变量
+#### 管程与条件变量：生产者消费者问题
 
 很多时候，何时加锁、何时上锁是需要通过多线程之间的共享状态来判断的。例如经典的 **生产者-消费者问题（producer-consumer problem）**：
 
@@ -183,7 +183,9 @@ class WorkQueue<T> {
 }
 ```
 
-提示：这是一个典型的无限仓库容量的生产者消费者问题——`Enqueue` 是生产者，`Dequeue` 是消费者，但比之前介绍的多了一个结束放入的操作。因此，需要定义一个标记是否结束的变量，且结束放入时，需要唤醒全部的消费者（`broadcast` 操作）；并且，消费者在取用商品（包括被唤醒）时，需要同时检查是否有商品以及是否结束放入两个判断条件。
+提示：这是一个典型的无限仓库容量的生产者消费者问题——`Enqueue` 是生产者，`Dequeue` 是消费者，但比之前介绍的多了一个结束放入的操作。因此，需要定义一个标记是否结束的变量，且结束放入时，需要唤醒全部的消费者（`broadcast` 操作）；并且，消费者在取用商品（包括被唤醒）时，需要同时检查是否有商品以及是否结束了放入两个判断条件，如果有商品则取出商品，无商品且发现结束了放入则返回 `false`。
+
+**注：小心对内部数据结构以及标记是否放入结束这两个共享变量的互斥。**
 
 > [!NOTE]
 >
@@ -249,7 +251,42 @@ LogAnalyzer
     WorkQueue.cs
 ```
 
-你的任务是要仔细阅读我们所给的基础代码，并完成 `AnalyzeAll`、`AnalyzeFiles`、`RunWorkers` 三个方法以及其他尚未完善的部分。
+在本工程的基础功能部分中，我们假定日志文件为扩展名是 `.log`，我们需要做的功能是提供一个日志文件所在的目录，系统会自动扫描其中扩展名为 `log` 的文件，并按需分析。你的任务是要仔细阅读我们所给的基础代码，并完成 `AnalyzeAll`、`AnalyzeFiles`、`RunWorkers` 三个方法以及其他尚未完善的部分。
+
+`LogFileAnalyzer` 需要实现如下接口：
+
+```class
+class LogFileAnalyzer {
+    string? CurrentDirectory { get; } // 获取日志文件所在目录
+    bool HasDirectory { get; }        // 是否设置了日志文件所在目录
+    bool IsAnalyzing { get; }         // 是否正在分析日志
+    LogFileAnalyzer(string? directoryPath = null); // 构造方法，参数为日志文件所在目录
+    bool ChangeDirectory(string? directoryPath);   // 设置或更改日志文件所在目录
+    IReadOnlyList<string> GetLogFiles();           // 获取日志文件所在目录中全部日志文件的文件名
+    
+    // 获取文件名为 `fileName` 的日志文件的分析结果
+    // 如果文件不存在则返回 `false`，存在则返回 `true` 并将结果存入 result
+    bool TryGetAnalysisResult(string fileName, out AnalysisResult? result);
+    
+    // 开启至多 degreeOfParallelism 个线程分析全部日志文件
+    // degreeOfParallelism 为 0 则最大线程数为本机逻辑处理器数量
+    // 等待分析完毕后该方法才返回
+    void AnalyzeAll(int degreeOfParallelism);
+    
+    // 开启至多 degreeOfParallelism 个线程分析 `fileName` 中指定的日志文件
+    // degreeOfParallelism 为 0 则最大线程数为本机逻辑处理器数量
+    // 等待分析完毕后该方法才返回
+    void AnalyzeFiles(int degreeOfParallelism, IEnumerable<string> fileNames)
+}
+```
+
+此外，对这些方法的部分要求如下：
+
++ `TryGetAnalysisResult` 获取的 `AnalysisResult`应满足约束：
+  + 当尚未完成分析时，`State` 的值为 `NotAnalyzed`，`Entries` 此时为空数组；
+  + 当分析完成后，`State` 的值为 `Succeeded`，且分析结果放在 `Entries` 中；
+  + 当分析发生错误时（例如日志的格式不正确），`State` 的值为 `Failed`，并把错误信息放在 `ErrorMessage` 中，`Entries` 为空数组。
++ `AnalyzeAll` 与 `AnalyzeFiles` 中应当跳过已经分析过且保存了分析结果的文件以节省计算资源。`AnalyzeFiles` 应当调用 `RunWorkers` 方法来分配分析任务，`RunWorkers` 中开辟的线程应当以 `WorkerMain` 作为入口方法。
 
 > [!NOTE]
 >
@@ -258,17 +295,21 @@ LogAnalyzer
 > 请完成 `LogAnalyzer/LogFileAnalyzer.cs` 中的 `LogFileAnalyzer` 的实现。
 >
 > 当你完成你的实现后，运行测试 `test-02-multithreading`，你将会通过全部测试。
+>
+> **提示：** 如果发现你的实现存在 bug 且一时间找不到 bug 位置，你可以先进行 S2.3 的实现。
 
 **可能用到的接口：**
 
 + C\# 文件流创建操作：`var reader = new StreamReader(filePath);` 输入文件的路径 `filePath` 创建用于读文件的流对象 `reader`。
 + C\# 文件信息访问操作 `FileInfo`：
-  + 获取文件名：`Name`
+  + 获取文件的名称：`Name`
   + 获取文件的完整路径：`FullName`
++ C\# 创建类型为 `T` 的空数组：`Array.Empty<T>()`
++ C\# 从异常中获取字符串信息：`ex.Message` 用于获取异常信息，`ex.ToString()` 除了异常信息之外还包括 [stack trace](https://stackoverflow.com/questions/3988788/what-is-a-stack-trace-and-how-can-i-use-it-to-debug-my-application-errors) 等更加详细的信息
 
 ### （S2.3）Step 3：一个简要的控制台交互界面
 
-现在，我们相对完整地完成了一个日志解析系统，为了方便大家在后续进一步地 Debug，这里让大家实现一个极其建议地控制台交互界面。
+现在，我们相对完整地完成了一个日志解析系统，为了方便大家在后续进一步地 Debug，这里让大家实现一个极其简易地控制台交互界面。
 
 代码框架已经在 `LocalCli/Program.cs` 中写好，大家只需要完成剩余的部分，调用之前写好的 `LogFileAnalyzer` 即可。你需要完成如下的：
 
@@ -280,7 +321,7 @@ LogAnalyzer
   + 对还没分析的文件，要给出提示信息
   + 对分析成功的文件，调用 `KeyValueVisitor.Dump` 输出结果
   + 对分析失败的文件，输出错误信息（`AnalysisResult.ErrorMessage`）
-+ 异常处理：`LogFileAnalyzer` 对错误输入的处理方式，要么返回 `false`，要么抛出异常。你需要对这类异常进行捕获，以提示用户的输入非法并提示其重新输入
++ 异常处理：（Important!!!）`LogFileAnalyzer` 对错误输入的处理方式，要么返回 `false`，要么抛出异常。为了保证程序的鲁棒性，你需要对这类异常进行捕获，以提示用户的输入非法并提示其重新输入，确保不会因为用户进行非法输入而导致整个程序崩溃！
 
 一个可以参考的界面成品截图如下：
 
@@ -292,7 +333,7 @@ LogAnalyzer
 >
 > 请完成 `LocalCli/Program.cs` 中的实现。
 >
-> 当你完成你的实现后，请在 `docs/02-multithreading` 目录中新建一个名为 `report.md` 的文本文件，在其中介绍你实现的功能，并给出完整功能的截图（参考以上给出的参考截图）。
+> 当你完成你的实现后，请在 `docs/02-multithreading` 目录中新建一个名为 `report.md` 的文本文件，在其中介绍你实现的功能，并给出完整功能的截图（参考以上给出的参考截图），以及你程序的鲁棒性测试截图（各种非法输入的情况）。
 
 **可能用到的接口：**
 
@@ -311,6 +352,20 @@ LogAnalyzer
     var str = "1,2,3";
     var result = str.Split(','); // result = { "1", "2", "3" }
     ```
+    
+  + `string.Trim`：返回一个去除字符串两边的空白字符的新字符串：
+
+    ```csharp
+    var str = "  abc    ";
+    var result = str.Trim(); // result = "abc"
+    ```
+
+  + `string.IsNullOrEmpty`：判断字符串是否为空
+
+    ```csharp
+    var b1 = string.IsNullOrEmpty("");    // true
+    var b2 = string.IsNullOrEmpty("abc"); // false
+    ```
 
 + LINQ 操作：LINQ 属于 C\# 中相对高级的语法，能极大地简化我们对各类可枚举类型的操作。尤其是其中的 Method syntax 能帮助我们节省诸多循环，但如果新手无法掌握也可以使用普通的循环来完成任务，如有兴趣可以参考官方文档：[编写 LINQ 查询 - C#](https://learn.microsoft.com/zh-cn/dotnet/csharp/linq/get-started/write-linq-queries)。以下是相对常用的几个 LINQ 方法：
 
@@ -322,5 +377,46 @@ LogAnalyzer
 
 ## 问答题
 
-未完待续，敬请期待……
+问答题的提交方式是在 `docs/02-multithreading` 中的 `report.md` 文件中进行你对问题的解答。
+
+### (Q2.1)
+
+本问题考察关于临界区的理解。
+
+我们把访问临界资源的程序片段称作临界区。在我们的多线程程序当中，临界资源即为不同线程的共享变量。请问：
+
++ `WorkQueue<T>` 类中的共享变量有哪些？是通过什么保护其免于数据竞争（data race）呢？
++ `LogFileAnalyzer` 类中的共享变量有哪些？是通过什么保护其免于数据竞争呢？
++ 如果条件变量的判断条件使用了 `if` 判断而非 `while` 判断，当出现了虚假唤醒现象时（在类 UNIX 系统中，由于 UNIX 信号等机制，即使没有人调用过 `signal` 或 `broadcast`，处于 `wait` 当中的条件变量也可能被唤醒），会出现什么后果？结合无限仓库容量的生产者消费者问题简单叙述一下。
+
+### (Q2.2)
+
+在给出的代码框架 `LogFileAnalyzer` 中：
+
++ 那一段代码扫描了给定的目录中的全部 `.log` 后缀的日志文件？假使给定的需求是不但要扫描给定目录中的日志文件，还要递归地获取给定的目录的全部子目录、子子目录……内的日志文件，应当如何做（简要回答即可）？
+
+### (Q2.3)
+
+本次作业中，你是否使用了 AI？根据你的使用情况，在以下 (Q2.3.a) (Q2.3.b) 两个问题中选择一题作答：
+
+#### (Q2.3.a)
+
+如果没有使用 AI，你花了大约多长时间通过全部测试？你认为本次作业相比于你曾经上过的程序设计课程的作业难度如何？你是否借助了传统搜索引擎来完成本节？你认为本节的难度是偏低、适中，还是偏高？
+
+#### (Q2.3.b)
+
+如果使用了 AI，你给予 AI 的提示词是什么？你对 AI 的使用是询问 AI 一些接口的用法或是在某处的写法，还是让 AI 帮你写一部分作业代码，又或是让 AI 给你讲解代码框架？AI 的解答是否出现过错误（如果有，是哪些）？你认为本节的难度是偏低、适中，还是偏高？
+
+## 其他
+
+关于本节的任务分值等信息，参看 [tasks.md](./tasks.md)。
+
+## 拓展阅读
+
+未完待续……
+
+## 前进 / 后退
+
++ 上一篇：[Tasks in Basic Functions](../01-basic/tasks.md)
++ 下一篇：[Tasks in Multithreading](./tasks.md)
 

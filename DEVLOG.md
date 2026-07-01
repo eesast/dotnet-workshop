@@ -2,7 +2,7 @@
 
 在开发队式的 workshop 的时候难免遇到许许多多的问题，在这里聊做记录吧。
 
-这个开发札记是此 workshop 原初的开发者建立的，后续的开发者如有想写的内容就接在后面写吧。在每一节的开头，可以注明自己的身份，或者写下的时间。
+这个开发札记是此 workshop 原初的开发者建立的，后续的开发者如有想写的内容就接在后面写吧。在每一节的开头，可以注明自己的身份，或者写下的时间。原初开发者给自己起的代号为「开发者 A」，后续的开发者可以继续选用剩余的代号，例如 B 到 Z，再然后是 AA 到 ZZ……
 
 ## 目录
 
@@ -115,9 +115,13 @@ dotnet workload install wasm-tools
 
 如果是使用 Visual Studio 调试，则需要在 Visual Studio Installer 中安装 .NET 10 WebAssembly Tools。
 
-## 关于 gRPC Web
+## 关于编写 WebAssembly 目标平台客户端的额外难题
 
-gRPC Web 和本地的 gRPC 是有区别的。gRPC Web 在连接之前要先使用 HTTP/1.1 做一次浏览器 CORS 预检请求 `OPTIONS`，而本地的 gRPC 则没有这一过程。这导致如果只开启 HTTP/2 协议则 gRPC Web 无法连接，而同时开启 HTTP/1.1 和 HTTP/2 则本地的 gRPC 无法连接：
+> 笔者：开发者 A
+
+偶然看到 Avalonia 是支持多平台客户端的，例如 Desktop（Windows、Linux、macOS）、Android、iOS，还有 WebAssembly（即可以在浏览器中运行）。Android 有一堆签名的事情需要处理，iOS 系统我手里没有，所以想试试能否同时支持 Desktop 和 WebAssembly（即 `LogAnalyzerClient.Browser` 项目），没想到遇到了巨大的困难。
+
+首先就是 gRPC Web 和本地的 gRPC 是有区别的。gRPC Web 在连接之前要先使用 HTTP/1.1 做一次浏览器 CORS 预检请求 `OPTIONS`，而本地的 gRPC 则没有这一过程。这导致 Agent 如果只开启 HTTP/2 协议则 gRPC Web 无法连接，而同时开启 HTTP/1.1 和 HTTP/2 则本地的 gRPC 无法连接：
 
 ```csharp
 builder.WebHost.ConfigureKestrel(options =>
@@ -129,5 +133,52 @@ builder.WebHost.ConfigureKestrel(options =>
 });
 ```
 
+也正是因此，同一个端口无法同时接受本地桌面客户端和浏览器客户端的连接，只能开两个不同的端口，分别接受本地客户端和浏览器客户端。这应该会给做 workshop 的同学带来不必要的困惑，因此我决定不给 workshop 加浏览器平台了。但 `Browser` 项目还是保留了下来，给有兴趣的同学探索。
 
+还有就是如果要支持浏览器平台需要配置 CORS，这是网站要讲的东西，不适合在队式中掌握。顺带一提，如要支持浏览器的 gRPC Web，还要给 Agent 加这两行：
+
+```csharp
+app.UseGrpcWeb();
+app.MapGrpcService<AgentService>()
+    .EnableGrpcWeb();
+```
+
+有一个给我折腾了最长时间的困难是两点：Avalonia 和 `Grpc.AspNetCore` 无法兼容于同一个项目中，以及 gRPC 客户端的创建方式在 Desktop 中和 Browser 中不一致的问题。
+
+对于Avalonia 和 `Grpc.AspNetCore` 无法兼容于同一个项目中的问题，我最开始 `LogAnalyzerRpc` 项目引用的是 `Grpc.AspNetCore` 包，结果发现它被 Avalonia 项目引用的时候，`Grpc.AspNetCore` 会被 Avalonia 项目间接依赖而存在于同一个项目中，而 Avalonia 与它是不兼容的，会编译不过。因此，经过我一番详细地拆解，`LogAnalyzerRpc` 只包含 `Google.Protobuf`、`Grpc.Tools`、`Grpc.Core.Api`（`Grpc.Core` 都不行，必须要带 `.Api`，服了）几个包。
+
+当然下一个问题就是版本的问题，应该选取哪个版本，以最大可能地和我选取的 `2.80.0` 版本的 `Grpc.AspNetCore` 保证兼容。于是我去翻了 [gRPC for .NET Release v2.80.0 版本的源码](https://github.com/grpc/grpc-dotnet/tree/f22747c72676120b2bc69a1ba7c8bed995e29b1b)，在里面的 [依赖配置文件](https://github.com/grpc/grpc-dotnet/blob/f22747c72676120b2bc69a1ba7c8bed995e29b1b/Directory.Packages.props#L35-L37) 中查了一下版本，引用了该版本的包：
+
+```xml
+<Project>
+  <PropertyGroup>
+    <GrpcDotNetPackageVersion>2.70.0</GrpcDotNetPackageVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Grpc.Tools" Version="2.80.0" />
+    <PackageVersion Include="Grpc.Core.Api" Version="$(GrpcDotNetPackageVersion)"/>
+    <PackageVersion Include="Google.Protobuf" Version="3.31.1" />
+  </ItemGroup>
+</Project>
+```
+
+对于 gRPC 客户端的创建方式在 Desktop 中和 Browser 中不一致的问题，Desktop 应该使用的是 `Grpc.Net.Client` 包来创建客户端，而 Browser 平台则还要多依赖一个 `Grpc.Net.Client.Web` 包来创建客户端，且两者创建客户端的方式也不相同：
+
+```csharp
+// Desktop
+var channel = GrpcChannel.ForAddress(address);
+var client = new LogAnalyzerAgentServiceClient(channel);
+
+// Browser
+var handler = new GrpcWebHandler(GrpcWebMode.GrpcWeb, new HttpClientHandler());
+var channel = GrpcChannel.ForAddress(address, new GrpcChannelOptions()
+    {
+        HttpHandler = handler
+    });
+var client = new LogAnalyzerAgentServiceClient(channel);
+```
+
+所以我使用了工厂方法模式来解决这一问题。
+
+此外，在全部跑通之后，发现部分的 gRPC 的 RPC 函数在调用的时候还存在一些问题，会发生调用失败的现象，但我暂时没有精力去弄清楚这些问题了。因此，跑通 Browser 平台的计划暂时被全面搁置。
 
