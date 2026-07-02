@@ -47,8 +47,8 @@ flowchart LR
 int CalculateAdd(int a, int b) {	     // a 和 b 为用户输入，需要为用户返回结果
     var request = new Request(a, b);     // 构造一个网络请求
     var response = NetworkCall(request); // 发出网络请求，获取响应
-    var result = response.Result;        // 从远端发回的响应中获取计算结果
-    return result;					     // 将结果返回给用户
+    var result = response.Value;         // 从远端发回的响应中获取计算结果
+    return result;                       // 将结果返回给用户
 }
 ```
 
@@ -93,7 +93,7 @@ public async Task<int> CalculateAddAsync(int a, int b) { // a 和 b 为用户输
     var response = await NetworkCallAsync(request); 
     
     // 远端响应到达后，重新占用一个线程，从远端发回的响应中获取计算结果
-    var result = response.Result;
+    var result = response.Value;
 
     // 将结果返回给用户
     return result;
