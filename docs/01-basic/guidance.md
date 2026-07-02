@@ -349,7 +349,7 @@ class LineParser {
     var index2 = str.IndexOf("hi") // -1
     ```
 
-    更多请参照：[String.IndexOf 方法 (System) | Microsoft Learn](https://learn.microsoft.com/zh-cn/dotnet/api/system.string.indexof?view=net-10.0)
+    更多请参照：[String.IndexOf 方法 (System) - Microsoft Learn](https://learn.microsoft.com/zh-cn/dotnet/api/system.string.indexof?view=net-10.0)
 
   + 获取子串：`String.Substring`
 
@@ -359,7 +359,7 @@ class LineParser {
     var str1 = str.Substring(5); // "567"
     ```
 
-    更多请参照：[String.Substring 方法 (System) | Microsoft Learn](https://learn.microsoft.com/zh-cn/dotnet/api/system.string.substring?view=net-10.0)
+    更多请参照：[String.Substring 方法 (System) - Microsoft Learn](https://learn.microsoft.com/zh-cn/dotnet/api/system.string.substring?view=net-10.0)
 
 
 ### （S1.2）Step 2：获取解析结果
