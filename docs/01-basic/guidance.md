@@ -158,11 +158,11 @@ abstract class Product {
 }
 
 class ConcreteProductA : Product {
-    abstract void Print() { Print("ConcreteProductA"); }
+    override void Print() { Print("ConcreteProductA"); }
 }
 
 class ConcreteProductB : Product {
-    abstract void Print() { Print("ConcreteProductB"); }
+    override void Print() { Print("ConcreteProductB"); }
 }
 
 var product = Factory.CreateProduct(type);
@@ -189,13 +189,13 @@ abstract class Product {
 }
 
 class ConcreteProductA : Product {
-    abstract void Accept(IVisitor visitor) {
+    override void Accept(IVisitor visitor) {
         visitor.Visit(this);  // 调用 IVisitor.Visit(ConcreteProductA product)
     }
 }
 
 class ConcreteProductB : Product {
-    abstract void Accept(IVisitor visitor) {
+    override void Accept(IVisitor visitor) {
         visitor.Visit(this);  // 调用 IVisitor.Visit(ConcreteProductB product)
     }
 }
