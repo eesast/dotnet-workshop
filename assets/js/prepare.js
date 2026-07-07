@@ -5,7 +5,7 @@ const current_url = window.location.origin + window.location.pathname;
 const paths = current_url.split('/');
 const pattern = /^(zh-CN|en-US)$/;
 const lang_index = paths.findIndex(path => pattern.test(path));
-const is_main_page = paths.length === 5 && current_url.endsWith('/');
+const is_main_page = (paths.length === 5 && current_url.endsWith('/')) || paths.length < 5;
 
 // Get the params and #id in current_url
 const params = current_url.split('?')[1];

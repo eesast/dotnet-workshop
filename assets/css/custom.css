@@ -122,3 +122,18 @@ code {
 .markdown-alert-caution .markdown-alert-title {
   color: #cf222e;
 }
+
+.toc {
+  padding: 1rem;
+  margin: 1rem 0 2rem;
+  border-left: 0.25rem solid #30363d;
+  background: rgba(110, 118, 129, 0.1);
+}
+
+.toc ul {
+  margin-bottom: 0;
+}
+
+.toc a {
+  text-decoration: none;
+}

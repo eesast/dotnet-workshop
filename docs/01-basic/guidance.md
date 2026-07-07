@@ -158,11 +158,11 @@ abstract class Product {
 }
 
 class ConcreteProductA : Product {
-    abstract void Print() { Print("ConcreteProductA"); }
+    override void Print() { Print("ConcreteProductA"); }
 }
 
 class ConcreteProductB : Product {
-    abstract void Print() { Print("ConcreteProductB"); }
+    override void Print() { Print("ConcreteProductB"); }
 }
 
 var product = Factory.CreateProduct(type);
@@ -189,13 +189,13 @@ abstract class Product {
 }
 
 class ConcreteProductA : Product {
-    abstract void Accept(IVisitor visitor) {
+    override void Accept(IVisitor visitor) {
         visitor.Visit(this);  // 调用 IVisitor.Visit(ConcreteProductA product)
     }
 }
 
 class ConcreteProductB : Product {
-    abstract void Accept(IVisitor visitor) {
+    override void Accept(IVisitor visitor) {
         visitor.Visit(this);  // 调用 IVisitor.Visit(ConcreteProductB product)
     }
 }
@@ -210,7 +210,15 @@ class PrintVisitor : IVisitor {
 }
 ```
 
-访问者模式的实际应用极其广泛。例如，编译器的语义分析阶段就普遍应用了访问者模式（或其优化后的变体）。[OpenJDK](https://github.com/openjdk) 就教科书式地使用了访问者模式来对语法树进行语义分析——[`Tree` 中定义了一个 `accept` 函数](https://github.com/openjdk/jdk/blob/a39a1f10f75c15b93a709eca7bfae2d808cf7b91/src/jdk.compiler/share/classes/com/sun/source/tree/Tree.java#L749)，而 [`TreeVisitor` 则定义了访问者接口](https://github.com/openjdk/jdk/blob/a39a1f10f75c15b93a709eca7bfae2d808cf7b91/src/jdk.compiler/share/classes/com/sun/source/tree/TreeVisitor.java#L59)。
+随后，我们即可将原来的代码重构为：
+
+```csharp
+var product = Factory.CreateProduct(type);
+var visitor = new PrintVisitor();
+product.Accept(visitor);
+```
+
+访问者模式的实际应用极其广泛。例如，编译器的语义分析阶段就普遍应用了访问者模式（或其优化后的变体）。[OpenJDK](https://github.com/openjdk) 就教科书式地使用了访问者模式来对语法树进行语义分析——[`Tree` 中定义了一个 `accept` 抽象函数](https://github.com/openjdk/jdk/blob/a39a1f10f75c15b93a709eca7bfae2d808cf7b91/src/jdk.compiler/share/classes/com/sun/source/tree/Tree.java#L749)，而 [`TreeVisitor` 则定义了访问者接口](https://github.com/openjdk/jdk/blob/a39a1f10f75c15b93a709eca7bfae2d808cf7b91/src/jdk.compiler/share/classes/com/sun/source/tree/TreeVisitor.java#L59)，其中 [`JCWhileLoop` 类实现了 `accept` 函数用于让 `Visitor` 对 `while` 循环语句进行语义分析](https://github.com/openjdk/jdk/blob/a39a1f10f75c15b93a709eca7bfae2d808cf7b91/src/jdk.compiler/share/classes/com/sun/tools/javac/tree/JCTree.java#L1225)。
 
 > 有趣的是，THUAI（清华大学人工智能挑战赛暨电子系队式程序设计大赛）的选手接口也曾使用访问者模式，参见 [THUAI6 Issue 17](https://github.com/eesast/THUAI6/issues/17)。在 THUAI6 中，选手需要同时为人类阵营和魔物阵营编写 AI 代码，存在 `IHumanAPI`、`IButcherAPI` 两套不同的逻辑用于供给选手来调用。因此，选手编写 AI 代码的类 `AI` 就成为了访问者。因此，在 `IGameTimer` 接口中提供了 `StartGame` 方法作为 `Accept` 方法；而 `IAI` 接口作为访问者接口，提供了 `play` 方法作为 `Visit` 方法。
 
@@ -349,7 +357,7 @@ class LineParser {
     var index2 = str.IndexOf("hi") // -1
     ```
 
-    更多请参照：[String.IndexOf 方法 (System) | Microsoft Learn](https://learn.microsoft.com/zh-cn/dotnet/api/system.string.indexof?view=net-10.0)
+    更多请参照：[String.IndexOf 方法 (System) - Microsoft Learn](https://learn.microsoft.com/zh-cn/dotnet/api/system.string.indexof?view=net-10.0)
 
   + 获取子串：`String.Substring`
 
@@ -359,7 +367,7 @@ class LineParser {
     var str1 = str.Substring(5); // "567"
     ```
 
-    更多请参照：[String.Substring 方法 (System) | Microsoft Learn](https://learn.microsoft.com/zh-cn/dotnet/api/system.string.substring?view=net-10.0)
+    更多请参照：[String.Substring 方法 (System) - Microsoft Learn](https://learn.microsoft.com/zh-cn/dotnet/api/system.string.substring?view=net-10.0)
 
 
 ### （S1.2）Step 2：获取解析结果

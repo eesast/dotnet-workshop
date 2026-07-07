@@ -8,6 +8,8 @@
 
 由此，[FranGuam](https://github.com/FranGuam) 创新性地为暑培的网站部分编写了 [web-workshop](https://github.dev/eesast/web-workshop) 用于暑培网站部分的学习，极大地提升了学生们的学习积极性。由此，队式的部分拟参考网站部分的成功经验，也开发了一套学习型工程用于队式部分的学习。
 
+**项目主页：**[https://eesast.github.io/dotnet-workshop/](https://eesast.github.io/dotnet-workshop/)
+
 ## 学习内容
 
 本工程将实现一个建议的云服务日志分析系统。通过本学习工程，你将学习到以下内容：
