@@ -1,7 +1,7 @@
 name: test-01-basic
 on:
   pull_request:
-    branches: [feat/01-basic]
+    branches: [homework/01-basic]
 
 jobs:
   test-01-basic:

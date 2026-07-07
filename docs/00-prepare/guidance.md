@@ -346,10 +346,10 @@ dotnet test -c Release
 本工程中，每一个章节对应一个单独的 Git 分支。分支如下：
 
 + `main`
-+ `feat/01-basic`
-+ `feat/02-multithreading`
-+ `feat/03-async-grpc`
-+ `feat/04-avalonia`
++ `homework/01-basic`
++ `homework/02-multithreading`
++ `homework/03-async-grpc`
++ `homework/04-avalonia`
 
 **EESAST 仓库的分支将在作业提交期间进行开放，其余时间不开放。**
 
@@ -366,22 +366,22 @@ dotnet test -c Release
 Fork 本仓库所有分支后，在本地切换到对应分支进行修改：
 
 ```shell
-git checkout "feat/01-basic"
+git checkout "homework/01-basic"
 ```
 
 如果发现分支不存在，则应当使用 `-b` 进行创建：
 
 ```shell
-git checkout -b "feat/01-basic"
+git checkout -b "homework/01-basic"
 ```
 
-如果你想把其他分支的修改合并到当前分支，例如你在开发 `01-basic` 时修改了一些内容，想把修改更新到 `02-multithreading`，可以在进入 `feat/02-multithreading` 分支后执行命令：
+如果你想把其他分支的修改合并到当前分支，例如你在开发 `01-basic` 时修改了一些内容，想把修改更新到 `02-multithreading`，可以在进入 `homework/02-multithreading` 分支后执行命令：
 
 ```shell
-git merge "feat/01-basic"
+git merge "homework/01-basic"
 ```
 
-即可从 `feat/01-basic` 拉取更改合并到  `feat/02-multithreading` 分支。
+即可从 `homework/01-basic` 拉取更改合并到  `homework/02-multithreading` 分支。
 
 #### ii) 提交修改到对应分支
 
@@ -395,12 +395,12 @@ git commit -m "<commit-message>"
 并 git commit 后，将改动提交到本地并推送到云端 fork 仓库：
 
 ```shell
-git push origin "feat/01-basic"
+git push origin "homework/01-basic"
 ```
 
 #### iii) 向本仓库对应分支提交 PR
 
-打开在 GitHub 上 fork 的仓库页面后，切换到刚刚推送的对应分支（如 `feat/01-basic`）
+打开在 GitHub 上 fork 的仓库页面后，切换到刚刚推送的对应分支（如 `homework/01-basic`）
 
 点击“Compare & Pull Request”按钮，并在 PR 创建页面填写相关信息
 

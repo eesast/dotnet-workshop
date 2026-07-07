@@ -1,7 +1,7 @@
 name: test-03-async-grpc
 on:
   pull_request:
-    branches: [feat/03-async-grpc]
+    branches: [homework/03-async-grpc]
 
 jobs:
   test-03-async-grpc:

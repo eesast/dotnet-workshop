@@ -1,7 +1,7 @@
 name: test-05-advanced
 on:
   pull_request:
-    branches: [feat/05-advanced]
+    branches: [homework/05-advanced]
 
 jobs:
   test-05-advanced:

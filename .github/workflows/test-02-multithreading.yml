@@ -1,7 +1,7 @@
 name: test-02-multithreading
 on:
   pull_request:
-    branches: [feat/02-multithreading]
+    branches: [homework/02-multithreading]
 
 jobs:
   test-02-multithreading:

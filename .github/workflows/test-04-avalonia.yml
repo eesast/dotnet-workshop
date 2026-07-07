@@ -1,7 +1,7 @@
 name: test-04-avalonia
 on:
   pull_request:
-    branches: [feat/04-avalonia]
+    branches: [homework/04-avalonia]
 
 jobs:
   test-04-avalonia:
