@@ -78,7 +78,9 @@ void thread() {
 
 假设生产者和消费者各是一个线程，生产者线程向仓库中放商品，以及消费者线程从仓库取商品，在仓库这个位置构成了数据竞争。因此访问仓库的代码理应是临界区而被互斥量保护。但是否保护这个互斥量要取决于仓库目前空不空，不空的时候需要原地等待释放互斥量，一旦有商品了立刻锁住互斥量进入临界区访问仓库。
 
-解决这类问题的其中一个方法是利用 **管程（monitor）** 。管程存在三种模型：Hasen 模型、Hoare 模型和 MESA 模型，其中 MESA 模型应用最为广泛。 **条件变量（condition variable）** 就是管程 MESA 模型的一种实现。条件变量有三个基本操作：
+解决这类问题的其中一个方法是利用 **管程（monitor）** 。管程存在三种模型：Hansen 模型[^1]、Hoare 模型[^2] 和 MESA 模型[^3]，其中 MESA 模型应用最为广泛。
+
+**条件变量（condition variable）** 就是管程 MESA 模型的一种实现[^3]。条件变量有三个基本操作：
 
 + `wait`：将互斥量解锁的同时进入休眠状态（被唤醒时会重新加锁互斥量）
 + `signal`：唤醒一个被休眠的线程
@@ -117,7 +119,15 @@ void consumer()
 }
 ```
 
+> [!IMPORTANT]
+>
 > 注：由于一些原因，条件变量可能存在 **虚假唤醒（spurious wakeup）** 的问题，对条件变量的判断条件不能用 `if`，必须用 `while` 在被唤醒后对条件再次检查。
+
+> [!TIP]
+>
+> 为什么叫「管程」？
+>
+> 英文原文中的 monitor 意译为「管程」表面上似乎令人难以捉摸。事实上，「管程」起初并非被实现为「条件变量」或类似于 C\# 中 `Monitor` 的方法调用，而是一种独立的编程模型（可以参考 Hoare 模型的参考文献[^2]，此外 [Java 的 `synchronized` 作用于方法时](https://docs.oracle.com/javase/tutorial/essential/concurrency/syncmeth.html) 在一定程度上部分体现了管程的原始设计）。此时，它与进程、线程、协程一样，都是一种对程序运行结构的抽象，因而译名中使用「程」字在某种程度上体现了译名的一致性。部分地区（如台湾）亦将其直译为「监视器」，但进程（process）、线程（thread）、协程（coroutine）等亦采取偏向于直译的「处理序」、「执行绪」、「共常式」等（参考 [附录 A](../appendix/docs/appendix/appendix-a-glossary.md)）。
 
 ### 队列
 
@@ -424,3 +434,8 @@ class LogFileAnalyzer {
 + 上一篇：[Tasks in Basic Functions](../01-basic/tasks.md)
 + 下一篇：[Tasks in Multithreading](./tasks.md)
 
+## 参考文献
+
+[^1]: [Hansen, P. B. (1973). Operating system principles. Prentice-Hall, Inc..](https://dl.acm.org/doi/abs/10.5555/540365)
+[^2]: [Hoare, C. A. R. (1974). Monitors: An operating system structuring concept. Communications of the ACM, 17(10), 549-557.](https://dl.acm.org/doi/abs/10.1145/355620.361161)
+[^3]: [Lampson, B. W., & Redell, D. D. (1980). Experience with processes and monitors in Mesa. Communications of the ACM, 23(2), 105-117.](https://dl.acm.org/doi/pdf/10.1145/358818.358824)
