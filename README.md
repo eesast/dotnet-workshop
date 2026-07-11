@@ -44,6 +44,8 @@
 + `05-advanced`
   + [Guidance](./docs/05-advanced/guidance.md)
   + [Tasks](./docs/05-advanced/tasks.md)
++ `appendix`
+  + [附录 A：部分名词不同语言对照表](./docs/appendix/appendix-a-glossary.md)
 
 ## 贡献
 

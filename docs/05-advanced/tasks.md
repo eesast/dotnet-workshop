@@ -12,5 +12,5 @@
 ## 前进 / 后退
 
 + 上一篇：[Guidance for Advanced Functions](./guidance.md)
-+ 下一篇：暂无
++ 下一篇：[附录 A：部分名词不同语言对照表](../appendix/appendix-a-glossary.md)
 
