@@ -127,7 +127,7 @@ void consumer()
 >
 > 为什么叫「管程」？
 >
-> 英文原文中的 monitor 意译为「管程」表面上似乎令人难以捉摸。事实上，「管程」起初并非被实现为「条件变量」或类似于 C\# 中 `Monitor` 的方法调用，而是一种独立的编程模型（可以参考 Hoare 模型的参考文献[^2]，此外 [Java 的 `synchronized` 作用于方法时](https://docs.oracle.com/javase/tutorial/essential/concurrency/syncmeth.html) 在一定程度上部分体现了管程的原始设计）。此时，它与进程、线程、协程一样，都是一种对程序运行结构的抽象，因而译名中使用「程」字在某种程度上体现了译名的一致性。部分地区（如台湾）亦将其直译为「监视器」，但进程（process）、线程（thread）、协程（coroutine）等亦采取偏向于直译的「处理序」、「执行绪」、「共常式」等（参考 [附录 A](../appendix/docs/appendix/appendix-a-glossary.md)）。
+> 英文原文中的 monitor 意译为「管程」表面上似乎令人难以捉摸。事实上，「管程」起初并非被实现为仅作为一个普通变量的「条件变量」或类似于 C\# 中 `Monitor` 的纯方法调用，而是一种独立的编程模型（可以参考 Hoare 模型的参考文献[^2]，此外 [Java 的 `synchronized` 作用于方法时](https://docs.oracle.com/javase/tutorial/essential/concurrency/syncmeth.html) 在一定程度上部分体现了管程的原始设计）。此时，它与进程、线程、协程一样，都是一种对程序运行结构的抽象，因而译名中使用「程」字在某种程度上体现了译名的一致性。部分地区（如台湾）亦将其直译为「监视器」，但进程（process）、线程（thread）、协程（coroutine）等亦采取偏向于直译的「处理序」、「执行绪」、「共常式」等（参考 [附录 A](../appendix/docs/appendix/appendix-a-glossary.md)）。
 
 ### 队列
 
