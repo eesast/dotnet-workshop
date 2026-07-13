@@ -155,7 +155,7 @@ int x4 = q.dequeue(); // 取出 4，当前队列为空
 本节需要实现一个 `LogFileAnalyzer` 类来完成相应功能，该类需要提供如下接口：
 
 ```csharp
-class LogFileAnalyzer() {
+class LogFileAnalyzer {
     // 构造方法，通过参数指定日志文件所在目录，扫描并获取其中所有后缀为 .log 的文件
     LogFileAnalyzer(string? directoryPath);
     // 更改日志文件所在目录，重新扫描并获取其中所有后缀为 .log 的文件
@@ -269,7 +269,7 @@ LogAnalyzer
 
 `LogFileAnalyzer` 需要实现如下接口：
 
-```class
+```csharp
 class LogFileAnalyzer {
     string? CurrentDirectory { get; } // 获取日志文件所在目录
     bool HasDirectory { get; }        // 是否设置了日志文件所在目录
