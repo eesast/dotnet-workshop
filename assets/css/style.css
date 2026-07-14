@@ -41,11 +41,12 @@ header {
   width: 100%;
   border-bottom: 1px dashed #b5e853;
   padding: 20px 0;
-  margin: 0 0 40px 0
+  margin: 0 0 40px 0;
+  font-size: 16px;
 }
 
 header h1 {
-  font-size: 30px;
+  font-size: 1.875em;
   line-height: 1.5;
   margin: 0 0 0 -40px;
   font-weight: bold;
@@ -68,7 +69,7 @@ header h1:before {
 }
 
 header h2 {
-  font-size: 18px;
+  font-size: 1.125em;
   font-weight: 300;
   color: #666
 }
@@ -106,35 +107,35 @@ h6 {
 }
 
 #main_content h1 {
-  font-size: 30px;
+  font-size: 1.875em;
   border-bottom: 1px solid #3d444db3;
   padding-bottom: .3em;
 }
 
 #main_content h2 {
-  font-size: 24px;
+  font-size: 1.5em;
   border-bottom: 1px solid #3d444db3;
   padding-bottom: .3em;
 }
 
 #main_content h3 {
-  font-size: 18px
+  font-size: 1.25em
 }
 
 #main_content h4 {
-  font-size: 14px
+  font-size: 1em
 }
 
 #main_content h5 {
-  font-size: 12px;
-  text-transform: uppercase;
+  font-size: 0.85em;
+  /* text-transform: uppercase; */
   margin: 0 0 5px 0
 }
 
 #main_content h6 {
-  font-size: 12px;
-  text-transform: uppercase;
-  color: #999;
+  font-size: 0.85em;
+  /* text-transform: uppercase; */
+  color: #9198a1;
   margin: 0 0 5px 0
 }
 
@@ -209,7 +210,7 @@ hr {
   color: rgba(255, 255, 255, 0.8);
   font-family: Helvetica, Arial, sans-serif;
   font-weight: bold;
-  font-size: 13px;
+  font-size: 0.8125em;
   text-decoration: none;
   text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.75);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05)
