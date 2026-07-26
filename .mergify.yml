@@ -33,3 +33,31 @@ pull_request_rules:
       label:
         add:
           - gh-pages
+
+- name: Debug documentation1
+  conditions:
+    - title ~= ^docs\(.*\)
+  actions:
+    comment:
+      message: "documentation1 rule matched"
+
+- name: Debug documentation2
+  conditions:
+    - title~=^docs\(.*\)
+  actions:
+    comment:
+      message: "documentation2 rule matched"
+
+- name: Debug documentation3
+  conditions:
+    - title~=docs\(.*\)
+  actions:
+    comment:
+      message: "documentation3 rule matched"
+
+- name: Debug documentation4
+  conditions:
+    - body~=hahaha
+  actions:
+    comment:
+      message: "documentation4 rule matched"
