@@ -68,13 +68,20 @@ namespace LogParser.Parser
         {
             var internalMessage = JsonSerializer.Deserialize<InternalMessage>(logRecord.Message, options)
                 ?? throw new FormatException($"Failed to deserialize internal message: {logRecord.Message}");
+            int separatorIndex = internalMessage.Exception.IndexOf(':'); // Find the first index of ":"
+            if(separatorIndex == -1)
+            {
+                throw new FormatException($"Invalid exception format: {internalMessage.Exception}");
+            }
+            string exceptionName = internalMessage.Exception.Substring(0, separatorIndex);
+            string exceptionMessage = internalMessage.Exception.Substring(separatorIndex + 1).TrimStart();
             return new InternalLogEntry(
                 LineNo: logRecord.LineNo,
                 Timestamp: DateTimeOffset.Parse(logRecord.Timestamp),
                 PodName: logRecord.PodName,
                 Severity: ParseSeverity(internalMessage.Severity),
-                ExceptionName: internalMessage.ExceptionName,
-                ExceptionMessage: internalMessage.ExceptionMessage
+                ExceptionName: exceptionName,
+                ExceptionMessage: exceptionMessage
             );
         }
 
@@ -106,8 +113,7 @@ namespace LogParser.Parser
 
         private record InternalMessage(
             [property: JsonRequired] string Severity,
-            [property: JsonRequired] string ExceptionName,
-            [property: JsonRequired] string ExceptionMessage
+            [property: JsonRequired] string Exception
         );
     }
 }
