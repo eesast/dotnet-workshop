@@ -51,8 +51,8 @@ private static JsonSerializerOptions options = new JsonSerializerOptions
 ## （Q1.2）
 
 + Dictionary<string, string> KeyValueVisitor.Dump(LogEntry entry)
-+ TResult Accept<TResult>(ILogEntryVisitor<TResult> visitor)
-+ TResult Visit(CallLogEntry entry) 或 TResult Visit(RequestLogEntry entry) 或 TResult Visit(InternalLogEntry entry)
++ Dictionary<string, string> CallLogEntry.Accept<Dictionary<string, string>>(visitor)
++ Dictionary<string, string> KeyValueVisitor.Visit(CallLogEntry entry)
 
 ## （Q1.3）
 
