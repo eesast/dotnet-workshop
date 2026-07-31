@@ -110,4 +110,4 @@ private static JsonSerializerOptions options = new JsonSerializerOptions
 这里正是访问者模式的「双重分派（double dispatch）」：第一重由 `entry.Accept(this)` 按 `entry` 的**运行时类型**分派到 `CallLogEntry.Accept`；第二重由 `visitor.Visit(this)` 按 `this` 的**编译时类型**（`CallLogEntry`）分派到 `KeyValueVisitor.Visit(CallLogEntry)` 的重载，从而对外部屏蔽了具体子类，却仍能对每种日志执行不同的行为。
 
 # (Q1.3.b)
-根据TODO框架和guidance.md完成任务××.AI能给出达成任务要求的代码并自行测试验证。有时候AI会有过度、无效兜底的问题，在这次作业中基本没有出现。
+根据TODO框架和guidance.md完成任务××.AI能给出达成任务要求的代码并自行测试验证。有时候AI会有过度、无效兜底的问题，在这次作业中基本没有出现
