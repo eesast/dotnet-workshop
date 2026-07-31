@@ -40,6 +40,7 @@ namespace LogParser.Visitors
             };
         }
 
+
         public Dictionary<string, string> Visit(InternalLogEntry entry)
         {
             return new Dictionary<string, string>

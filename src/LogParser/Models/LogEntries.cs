@@ -72,5 +72,4 @@
             return visitor.Visit(this);
         }
     }
-
 }
