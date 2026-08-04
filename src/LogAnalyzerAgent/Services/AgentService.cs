@@ -29,27 +29,34 @@ namespace LogAnalyzerAgent.Services
 
         public override Task<ChangeDirectoryResponse> ChangeDirectory(ChangeDirectoryRequest request, ServerCallContext context)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            return _session.ChangeDirectory(request, context.CancellationToken);
         }
 
         public override Task<GetLogFilesResponse> GetLogFiles(Empty empty, ServerCallContext context)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            return _session.GetLogFiles(empty, context.CancellationToken);
         }
 
         public override Task<AnalyzeAllResponse> AnalyzeAll(AnalyzeAllRequest request, ServerCallContext context)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            return _session.AnalyzeAll(request, context.CancellationToken);
         }
 
         public override Task<AnalyzeFilesResponse> AnalyzeFiles(AnalyzeFilesRequest request, ServerCallContext context)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            return _session.AnalyzeFiles(request, context.CancellationToken);
         }
 
         public override async Task GetAnalysisResult(GetAnalysisResultRequest request, IServerStreamWriter<GetAnalysisResultResponse> responseStream, ServerCallContext context)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            // 从 Session 获取结果列表
+            var responses = _session.GetAnalysisResult(request, context.CancellationToken);
+
+            // 遍历列表并流式写入到 gRPC 响应流中
+            foreach (var response in responses)
+            {
+                await responseStream.WriteAsync(response);
+            }
         }
     }
 }
