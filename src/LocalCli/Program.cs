@@ -204,7 +204,14 @@ namespace LocalCli
 
                 case AnalysisState.Succeeded:
                     Console.WriteLine($"Analysis result for '{fileName}' (Worker #{result.WorkerId}):");
-                    KeyValueVisitor.Dump(result.Entries);
+                    // 修改部分：遍历传入
+                    if (result.Entries != null)
+                    {
+                        foreach (var entry in result.Entries)
+                        {
+                            KeyValueVisitor.Dump(entry);
+                        }
+                    }
                     break;
 
                 case AnalysisState.Failed:
