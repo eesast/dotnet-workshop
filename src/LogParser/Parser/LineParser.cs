@@ -27,6 +27,7 @@ namespace LogParser.Parser
                 }
             }
         }
+        
 
         private static JsonSerializerOptions options = new JsonSerializerOptions
         {
