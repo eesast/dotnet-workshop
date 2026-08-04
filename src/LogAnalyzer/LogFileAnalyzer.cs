@@ -1,7 +1,10 @@
-﻿using LogParser.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using LogParser.Models;
 using LogParser.Parser;
-using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.X509Certificates;
 
 namespace LogAnalyzer
 {
@@ -15,6 +18,7 @@ namespace LogAnalyzer
 
         public string? CurrentDirectory => _currentDirectory;
         public bool HasDirectory => _currentDirectory is not null;
+
         public bool IsAnalyzing
         {
             get
@@ -67,7 +71,7 @@ namespace LogAnalyzer
                         .OrderBy(fileName => fileName);
                     foreach (var fileName in logFiles)
                     {
-                        _logFiles.Add(fileName, new FileInfo(Path.Join(_currentDirectory, fileName)));
+                        _logFiles.Add(fileName, new FileInfo(Path.Combine(directoryPath, fileName)));
                         _analysisResults.Add(fileName, new AnalysisResult(
                             FileName: fileName,
                             FullName: _logFiles[fileName].FullName,
@@ -179,12 +183,12 @@ namespace LogAnalyzer
 
             var queue = new WorkQueue<FileInfo>();
 
-            // 1. 先将任务入队
             foreach (var file in logFilesToParse)
             {
                 queue.Enqueue(file);
             }
             queue.CompleteAdding();
+
             degreeOfParallelism = Math.Max(Math.Min(degreeOfParallelism, logFilesToParse.Count), 1);
             var workers = new Thread[degreeOfParallelism];
             for (int i = 0; i < degreeOfParallelism; i++)
@@ -193,7 +197,8 @@ namespace LogAnalyzer
                 string threadName = $"log-analyzer-worker-{workerId}";
                 workers[i] = new Thread(() => WorkerMain(workerId, queue))
                 {
-                    Name = threadName
+                    Name = threadName,
+                    IsBackground = true
                 };
                 workers[i].Start();
             }
@@ -212,7 +217,6 @@ namespace LogAnalyzer
                 AnalysisResult result;
                 try
                 {
-
                     using var streamReader = new StreamReader(file.FullName);
                     var entries = parser.Parse(streamReader);
 
@@ -237,7 +241,6 @@ namespace LogAnalyzer
                     );
                 }
 
-              
                 lock (_syncRoot)
                 {
                     _analysisResults[file.Name] = result;
