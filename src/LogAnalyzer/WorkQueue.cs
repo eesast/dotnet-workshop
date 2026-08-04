@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 
-
 namespace LogAnalyzer
 {
     public class WorkQueue<T>
@@ -24,9 +23,9 @@ namespace LogAnalyzer
 
         public void Enqueue(T item)
         {
-            lock(_items)
+            lock (_items)
             {
-                if(_isCompleted)
+                if (_isCompleted)
                 {
                     throw new InvalidOperationException("Adding has been completed.");
                 }
@@ -37,17 +36,19 @@ namespace LogAnalyzer
 
         public bool TryDequeue([NotNullWhen(true)] out T? item)
         {
-            lock (_items) 
+            lock (_items)
             {
-                while (_items.Count== 0 &&! _isCompleted) 
-                { 
+                while (_items.Count == 0 && !_isCompleted)
+                {
                     Monitor.Wait(_items);
                 }
-                if( _items.Count >0)
+
+                if (_items.Count > 0)
                 {
-                    item=_items.Dequeue();
+                    item = _items.Dequeue()!;
                     return true;
                 }
+
                 item = default;
                 return false;
             }

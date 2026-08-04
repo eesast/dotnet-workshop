@@ -179,12 +179,12 @@ namespace LogAnalyzer
 
             var queue = new WorkQueue<FileInfo>();
 
+            // 1. 先将任务入队
             foreach (var file in logFilesToParse)
             {
                 queue.Enqueue(file);
             }
             queue.CompleteAdding();
-
             degreeOfParallelism = Math.Max(Math.Min(degreeOfParallelism, logFilesToParse.Count), 1);
             var workers = new Thread[degreeOfParallelism];
             for (int i = 0; i < degreeOfParallelism; i++)
