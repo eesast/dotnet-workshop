@@ -62,38 +62,38 @@ dotnet run --project src/LogAnalyzerClient/LogAnalyzerClient.Desktop
 
 ### 1. 启动并连接到 Agent
 
-![alt text](QQ_1785817655622.png)
+![alt text](./QQ_1785817655622.png)
 
 ### 2. 切换目录并刷新出文件列表
 
 在 *Directory Path* 输入框输入绝对路径 → 点击 `Change Directory`
-![alt text](QQ_1785813088042.png)
+![alt text](./QQ_1785813088042.png)
 
 ### 3. 多选文件并分析（Analyze → Selected）
 
-![alt text](QQ_1785817741740.png)
+![alt text](./QQ_1785817741740.png)
 
 ### 4. 分析全部文件（Analyze → All）
 
-![alt text](QQ_1785817782805.png)
+![alt text](./QQ_1785817782805.png)
 
 ### 5. 右键分析单个文件（右键菜单 Analyze File）
 
-![alt text](QQ_1785817816941.png)
+![alt text](./QQ_1785817816941.png)
 
 ### 6. 查看分析结果（右键菜单 View Analysis Results）—— 成功
 
 选中已分析成功的文件（如 `basic-multiple.log`）→ 右键 → 点击 `View Analysis Results(V)`（调用流式 `GetAnalysisResult`）
 
-![alt text](QQ_1785818118027.png)
+![alt text](./QQ_1785818118027.png)
 
 ### 7. 查看分析结果 —— 失败 / 尚未分析
 
 失败：选中 `basic-fail.log`，用 `All` 或 `Selected` 分析它（会解析失败）→ 右键 → `View Analysis Results(V)`
 未分析：连接并切换目录后，**不**进行分析，直接选中某文件 → 右键 → `View Analysis Results(V)`
 
-![alt text](QQ_1785818173900.png)
-![alt text](QQ_1785819031379.png)
+![alt text](./QQ_1785818173900.png)
+![alt text](./QQ_1785819031379.png)
 ---
 
 ## 三、鲁棒性测试截图（命令 / 操作标注）
@@ -101,23 +101,23 @@ dotnet run --project src/LogAnalyzerClient/LogAnalyzerClient.Desktop
 ### 1. 未连接 Agent 就执行操作
 
 **不**点击 `Connect...`，直接点击 `Refresh` / `Change Directory` / `Selected` 等任意按钮
-![alt text](QQ_1785827003500.png)
+![alt text](./QQ_1785827003500.png)
 
 ### 2. 连接到不存在的 Agent 地址
 
-![alt text](QQ_1785827109255.png)
+![alt text](./QQ_1785827109255.png)
 
 ### 3. 非法的目录路径
 
-![alt text](QQ_1785827490152-1.png)
+![alt text](./QQ_1785827490152-1.png)
 
 ### 4. 非法的并行度输入
 
-![alt text](QQ_1785827569651.png)
+![alt text](./QQ_1785827569651.png)
 
 ### 5. 未选中文件就点击 Selected
 
-![alt text](QQ_1785827606708.png)
+![alt text](./QQ_1785827606708.png)
 
 ---
 

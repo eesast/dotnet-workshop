@@ -50,19 +50,19 @@
 
 ### 启动 + 查看日志文件列表
 
-![alt text](0b487ce620ea8067dee251d1968508c4.png)
+![alt text](./0b487ce620ea8067dee251d1968508c4.png)
 
 ### 分析指定文件
 
-![alt text](QQ_1785484396152-3.png)
+![alt text](./QQ_1785484396152-3.png)
 
 ### 查看分析成功的结果，查询尚未分析的文件
 
-![alt text](e87b65691415cb6e03e2e985cded5bfb.png)
+![alt text](./e87b65691415cb6e03e2e985cded5bfb.png)
 
 ### 分析全部 + 查看失败文件的错误信息 
 
-![alt text](QQ_1785484923024.png)
+![alt text](./QQ_1785484923024.png)
 
 
 ## 三、鲁棒性测试
