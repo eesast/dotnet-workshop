@@ -82,4 +82,46 @@
 8. 切换目录后结果重置 → `basic-fail.log` 变回 "not been analyzed"
 9. 重新分析后再次查看失败文件 → 正确输出错误信息
 
-Q2.1：
+---
+
+## 问答
+
+### Q2.1
+
+**`WorkQueue<T>` 类中的共享变量有哪些？是通过什么保护其免于数据竞争（data race）呢？**
+
+`_items` 和 `_isCompleted` 都是共享变量，访问二者时提前打上 `_items` 的锁使得二者免于数据竞争。
+
+**`LogFileAnalyzer` 类中的共享变量有哪些？是通过什么保护其免于数据竞争呢？**
+
+```csharp
+private string? _currentDirectory = null;
+private bool _isAnalyzing = false;
+private readonly Dictionary<string, FileInfo> _logFiles = new();
+private readonly Dictionary<string, AnalysisResult> _analysisResults = new();
+```
+
+以上都是共享变量，通过打上 `_syncRoot` 的锁避免数据竞争。
+
+**如果条件变量的判断条件使用了 `if` 判断而非 `while` 判断，当出现了虚假唤醒现象时（在类 UNIX 系统中，由于 UNIX 信号等机制，即使没有人调用过 `signal` 或 `broadcast`，处于 `wait` 当中的条件变量也可能被唤醒），会出现什么后果？结合无限仓库容量的生产者消费者问题简单叙述一下。**
+
+以无限仓库容量的生产者消费者问题为例，如果采用 `if(queue.Count == 0)`，当内部 wait 虚假唤醒，则线程继续执行下方 `Dequeue`，试图出队空队列，从而导致抛出 `InvalidOperationException`。
+
+### Q2.2
+
+**那一段代码扫描了给定的目录中的全部 `.log` 后缀的日志文件？假使给定的需求是不但要扫描给定目录中的日志文件，还要递归地获取给定的目录的全部子目录、子子目录……内的日志文件，应当如何做（简要回答即可）？**
+
+```csharp
+var logFiles = Directory.EnumerateFiles(directoryPath, "*.log", SearchOption.TopDirectoryOnly)
+                        .Select(filePath => Path.GetFileName(filePath))
+                        .OrderBy(fileName => fileName);
+```
+
+以上代码扫描全部 `.log` 后缀的日志文件。将上述 `TopDirectoryOnly` 改为 `AllDirectories` 即可递归获取所有子目录中的日志文件。
+
+### Q2.3
+
+- 我使用了AI工具辅助
+- 第一次：由于我不会写文件的流式读取，导致 `parser.Parse` 参数类型不匹配，因此我在 VS Code 的 CC 插件中询问如下问题："这段代码中 `result = parser.Parse(file);` 并不正确，`parser.Parse` 需要 `TextReader` 类型，应当如何修改？"
+- 第二次：我借助了AI完成CLI：提示词为"根据 `docs/02-multiheading/guidance.md` 中对于 T2.3 的要求，完成 `Program.cs`"
+- 本文件的测试部分也由AI生成，经过核对与 `report.md` 中要求相符
