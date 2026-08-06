@@ -204,12 +204,17 @@ namespace LocalCli
 
                 case AnalysisState.Succeeded:
                     Console.WriteLine($"Analysis result for '{fileName}' (Worker #{result.WorkerId}):");
-                    // 修改部分：遍历传入
+
+                    // 整合判空逻辑
                     if (result.Entries != null)
                     {
+                        // 修复 CS0120：实例化 KeyValueVisitor
+                        var visitor = new KeyValueVisitor();
+
                         foreach (var entry in result.Entries)
                         {
-                            KeyValueVisitor.Dump(entry);
+                            // 使用实例调用 Dump 方法
+                            visitor.Dump(entry);
                         }
                     }
                     break;
