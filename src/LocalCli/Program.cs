@@ -112,22 +112,92 @@ namespace LocalCli
 
         private static void ShowLogFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            foreach (var file in analyzer.GetLogFiles())
+            {
+                Console.WriteLine(file);
+            }
         }
 
         private static void AnalyzeFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Degree of parrallelism:");
+            var parrallelism = Console.ReadLine();
+            if (parrallelism == null)
+            {
+                return;
+            }
+            Console.WriteLine("Filenames, split with ',':");
+            var filesStr = Console.ReadLine();
+            if (filesStr == null)
+            {
+                return;
+            }
+            try
+            {
+                analyzer.AnalyzeFiles(int.Parse(parrallelism), filesStr.Split(',').Select(x => x.Trim()));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
         }
 
         private static void AnalyzeAll(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Degree of parrallelism:");
+            var input = Console.ReadLine();
+            if (input == null)
+            {
+                return;
+            }
+            int degreeOfParallelism;
+            try
+            {
+                degreeOfParallelism = int.Parse(input);
+                analyzer.AnalyzeAll(degreeOfParallelism);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
         }
 
         private static void GetAnalysisResult(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Filename:");
+            var filename = Console.ReadLine().Trim();
+            if (filename == null)
+            {
+                return;
+            }
+            if (analyzer.TryGetAnalysisResult(filename, out AnalysisResult? result))
+            {
+                if (result.State == AnalysisState.Succeeded)
+                {
+                    var visitor = new KeyValueVisitor();
+                    foreach (var entry in result.Entries)
+                    {
+                        var dumpedInfo = visitor.Dump(entry);
+                        foreach (var item in dumpedInfo)
+                        {
+                            Console.Write($"[{item.Key}] {item.Value} ");
+                        }
+                        Console.WriteLine();
+                    }
+                }
+                else if (result.State == AnalysisState.Failed)
+                {
+                    Console.WriteLine("Analysis failed");
+                }
+                else if (result.State == AnalysisState.NotAnalyzed)
+                {
+                    Console.WriteLine("Not analyzed yet");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"No parse result for file {filename}.");
+            }
         }
     }
 }
