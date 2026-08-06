@@ -204,7 +204,11 @@ namespace LocalCli
 
                 case AnalysisState.Succeeded:
                     Console.WriteLine($"Analysis result for '{fileName}' (Worker #{result.WorkerId}):");
-                    KeyValueVisitor.Dump(result.Entries);
+                    // Fix: Iterate over the entries collection
+                    foreach (var entry in result.Entries)
+                    {
+                        KeyValueVisitor.Dump(entry);
+                    }
                     break;
 
                 case AnalysisState.Failed:
