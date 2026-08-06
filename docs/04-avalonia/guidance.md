@@ -194,7 +194,7 @@ public static void Main(string[] args) {
 > [!IMPORTANT]
 >
 > + **图形界面程序的 UI 渲染以及对用户操作的响应等仅有单一的 UI 线程负责，因此为了防止 UI 线程阻塞导致程序看似卡死，你需要让所有的 gRPC 请求均为异步请求并进行 `await`！！！** 具体原理参考上一节 `03-async-grpc` 中「知识速递」一节的讲解
-> + **本项目作为图形界面程序， 绝对不应该因为用户输入的非法，或是一些内部错误而崩溃。因此，你应当做好输入检查以及异常处理，即使通过消息框向用户弹出出错信息**
+> + **本项目作为图形界面程序， 绝对不应该因为用户输入的非法，或是一些内部错误而崩溃。因此，你应当做好输入检查以及异常处理，即是通过消息框向用户弹出出错信息**
 
 
 
@@ -228,7 +228,7 @@ public static void Main(string[] args) {
 
   + 此外，你还需要完成的是日志分析结果的显示。日志分析结果的显示在 Analysis Result 下方的列表框中：
 
-    ```xaml
+    ```xml
     <ListBox Name="ResultEntryListBox"
              Grid.Row="2"
              ItemsSource="{Binding ResultEntries, Mode=OneWay}">
@@ -256,7 +256,7 @@ public static void Main(string[] args) {
 >
 > **任务 4.1（T4.1）**
 >
-> 你需要实现以上提到的全部功能。
+> 你需要实现以上提到的全部功能。我们给出了 [一个 UI 界面的样例](https://eesast.github.io/dotnet-workshop/demo/) 供参考。
 >
 > 当你完成你的实现后，请在 `docs/04-avalonia` 目录中新建一个名为 `report.md` 的文本文件，在其中介绍你实现的功能，并给出完整功能的截图，以及你程序的鲁棒性测试截图（各种非法输入的情况）。
 >
@@ -281,7 +281,7 @@ partial class MainViewModel {
 }
 ```
 
-此时将会自动为我们生成代码：
+此时 `CommunityToolkit.Mvvm` 框架将会自动为我们在后台生成如下代码可以供我们直接调用：
 
 ```csharp
 partial class MainViewModel {
@@ -304,6 +304,8 @@ bool SetProperty<T>(ref T field, T newValue, string? propertyName = null)
 }
 ```
 
+我们只需要使用框架为我们生成好的 `Greeting` 属性即可。
+
 当我们要创建一个响应函数时，只需要用 `[ReplayCommand]` 修饰即可：
 
 ```csharp
@@ -317,13 +319,19 @@ partial class MainViewModel {
 }
 ```
 
-此时也会为我们自动生成代码：
+此时 `CommunityToolkit.Mvvm` 框架也会自动为我们在后台生成如下代码可以供我们直接调用：
 
 ```csharp
 partial class MainViewModel {
     private RelayCommand? pressCommand;
     public IRelayCommand PressCommand => pressCommand ??= new RelayCommand(PressAsync);
 }
+```
+
+我们可以使用框架为我们生成好的 `PressCommand` 在 `.axaml` 文件中直接绑定到控件的 `Command` 属性：
+
+```xml
+<Button Content="Press" Command="{Binding PressCommand}" />
 ```
 
 

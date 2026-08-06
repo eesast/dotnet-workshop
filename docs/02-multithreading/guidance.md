@@ -127,7 +127,7 @@ void consumer()
 >
 > 为什么叫「管程」？
 >
-> 英文原文中的 monitor 意译为「管程」表面上似乎令人难以捉摸。事实上，「管程」起初并非被实现为仅作为一个普通变量的「条件变量」或类似于 C\# 中 `Monitor` 的纯方法调用，而是一种独立的编程模型（可以参考 Hoare 模型的参考文献[^2]，此外 [Java 的 `synchronized` 作用于方法时](https://docs.oracle.com/javase/tutorial/essential/concurrency/syncmeth.html) 在一定程度上部分体现了管程的原始设计）。此时，它与进程、线程、协程一样，都是一种对程序运行结构的抽象，因而译名中使用「程」字在某种程度上体现了译名的一致性。部分地区（如台湾）亦将其直译为「监视器」，但进程（process）、线程（thread）、协程（coroutine）等亦采取偏向于直译的「处理序」、「执行绪」、「共常式」等（参考 [附录 A](../appendix/docs/appendix/appendix-a-glossary.md)）。
+> 英文原文中的 monitor 意译为「管程」表面上似乎令人难以捉摸。事实上，「管程」起初并非被实现为仅作为一个普通变量的「条件变量」或类似于 C\# 中 `Monitor` 的纯方法调用，而是一种独立的编程模型（可以参考 Hoare 模型的参考文献[^2]，此外 [Java 的 `synchronized` 作用于方法时](https://docs.oracle.com/javase/tutorial/essential/concurrency/syncmeth.html) 在一定程度上部分体现了管程的原始设计）。此时，它与进程、线程、协程一样，都是一种对程序运行结构的抽象，因而译名中使用「程」字在某种程度上体现了译名的一致性。部分地区（如台湾）亦将其直译为「监视器」，但进程（process）、线程（thread）、协程（coroutine）等亦采取偏向于直译的「处理序」、「执行绪」、「共常式」等（参考 [附录 A](../appendix/appendix-a-glossary.md)）。
 
 ### 队列
 
@@ -302,6 +302,24 @@ class LogFileAnalyzer {
   + 当分析发生错误时（例如日志的格式不正确），`State` 的值为 `Failed`，并把错误信息放在 `ErrorMessage` 中，`Entries` 为空数组。
 + `AnalyzeAll` 与 `AnalyzeFiles` 中应当跳过已经分析过且保存了分析结果的文件以节省计算资源。`AnalyzeFiles` 应当调用 `RunWorkers` 方法来分配分析任务，`RunWorkers` 中开辟的线程应当以 `WorkerMain` 作为入口方法。
 
+> [!TIP]
+>
+> 本步骤内容需要用到你在上一节 `01-basic` 中的实现，因此你需要将上一节在 `homework/01-basic` 中改动的内容同步到本节。先确认你现在所处的分支：
+> 
+> ```shell
+> git branch
+> ```
+> 
+> 为 `homework/02-multithreading` 分支，然后进行 `merge` 操作：
+> 
+> ```shell
+> git merge "homework/01-basic"
+> ```
+> 
+> 即可将 `homework/01-basic` 的内容同步到 `homework/02-multithreading` 分支。
+>
+> 后续的章节均会以此方式进行 `merge` 操作，将不再复述。
+
 > [!NOTE]
 >
 > **任务 2.2（T2.2）**
@@ -387,7 +405,7 @@ class LogFileAnalyzer {
   + `Select`：对元素进行转换
   + `OrderBy`：按指定的键排序
 
-  LINQ 方法的返回值是一个 `IEnumerable<T>` 类型（利用 **协程（coroutine）** 技术产生的可以惰性求值的类型，C\# 中可以使用 `yield return` 语句来进行惰性求值），即可以使用 `foreach` 语句进行遍历，也可以调用诸如 `ToList` 等方法将其转换成列表或其他容器。
+  LINQ 方法的返回值是一个 `IEnumerable<T>` 类型（利用 **协程（coroutine）** 技术产生的可以惰性求值的类型，C\# 中可以使用 `yield return` 语句来进行惰性求值），既可以使用 `foreach` 语句进行遍历，也可以调用诸如 `ToList` 等方法将其转换成列表或其他容器。
 
 ## 问答题
 

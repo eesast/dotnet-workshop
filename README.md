@@ -6,9 +6,12 @@
 
 由于暑培具有时间短、覆盖面广，且每人负责一部分的特点，而每位主讲人都希望在自己的部分倾囊相授，以达到「速成」的效果，因此以往的倾向于选择知识密集型的教学方式，或多或少造成了「填鸭式」、「量子波动速读」的效果。一项技术（特别是编程领域）的知识点既多又散，即便主讲人们努力抓住主干脉络，也难免落入长篇累牍堆砌知识点的境地，不仅让听者产生厌烦，也不利于同学们掌握这门技术在实际开发当中的应用。
 
-由此，[FranGuam](https://github.com/FranGuam) 创新性地为暑培的网站部分编写了 [web-workshop](https://github.dev/eesast/web-workshop) 用于暑培网站部分的学习，极大地提升了学生们的学习积极性。由此，队式的部分拟参考网站部分的成功经验，也开发了一套学习型工程用于队式部分的学习。
+由此，[FranGuam](https://github.com/FranGuam) 创新性地为暑培的网站部分编写了 [web-workshop](https://github.com/eesast/web-workshop) 用于暑培网站部分的学习，极大地提升了学生们的学习积极性。由此，队式的部分拟参考网站部分的成功经验，也开发了一套学习型工程用于队式部分的学习。
 
-**项目主页：**[https://eesast.github.io/dotnet-workshop/](https://eesast.github.io/dotnet-workshop/)
+**项目主页：**[https://eesast.github.io/dotnet-workshop/](https://eesast.github.io/dotnet-workshop/)  
+
+**参考解答：**[https://github.com/eesast/dotnet-workshop-solution](https://github.com/eesast/dotnet-workshop-solution)（非 `public`，仅讲师内部参考使用）  
+**演示效果：**[https://eesast.github.io/dotnet-workshop/demo/](https://eesast.github.io/dotnet-workshop/demo/)
 
 ## 学习内容
 
@@ -56,13 +59,17 @@
 
 我们相信同学们参加暑培是为了精进开发能力，而不是为了完成而完成。经过暑培的学习，你将具备一名 **Developer** 应有的**品味（taste）**，指引你在软件开发的广阔世界中不断前行。
 
-> 在 AI 时代，大部分简单的需求都能够通过AI在短时间内完成。但现实中的软件系统往往面临着复杂的业务逻辑、多变的需求，以及来自团队协作和长期维护的挑战。
+> 在 AI 时代，大部分简单的需求都能够通过 AI 在短时间内完成。但现实中的软件系统往往面临着复杂的业务逻辑、多变的需求，以及来自团队协作和长期维护的挑战。
 > 一个常见的例子是，AI 快速生成了一个功能模块的代码，但带有许多不必要的条件检查和异常处理逻辑，使得代码变得冗长且难以理解（过度的防御性编程）。如果不对这种情况加以审查和优化，时间长了，整个系统便会成为「屎山」。
 > 面对复杂的业务需求，如何简洁、高效地实现功能，如何在长期维护中保持代码的可读性和可扩展性，这都需要开发者具备良好的代码品味（taste）。
 
 ## 贡献
 
 若你是本工程代码框架的开发者，你需要认真阅读 [开发者贡献指南](./CONTRIBUTING.md) 来进行开发。
+
+## 反馈
+
+如果你有关于软件本身，或是学习曲线设计等，存在一些疑问或问题，欢迎参考 [Issue #69](https://github.com/eesast/dotnet-workshop/issues/69) 中的指引向我们反馈！
 
 ## 后记
 

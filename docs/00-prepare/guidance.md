@@ -51,7 +51,7 @@
 
 #### 复刻仓库（Fork this Repository）
 
-本仓库隶属于 EESAST 组织，并关闭了直接提交的权限。要对代码进行修改，需要在你自己的个人账户中复刻这个仓库（本质是两个仓库，不同姓也可以不同名，但有天然的关联）：
+本仓库隶属于 EESAST 组织，并关闭了直接提交的权限。要对代码进行修改，需要在你自己的个人账户中复刻 [这个仓库](https://github.com/eesast/dotnet-workshop) （原仓库与复刻的仓库本质上是两个仓库，不同姓也可以不同名，但在 GitHub 上存在关联）：
 
 ![press-fork](./assets/press-fork.png)
 

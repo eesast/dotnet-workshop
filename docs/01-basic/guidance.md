@@ -320,7 +320,7 @@ public class LogFileParser {
 
 ```csharp
 var parser = new LogFileParser();
-using var reader = new StreamReader('path/to/logfile');
+using var reader = new StreamReader("path/to/logfile");
 foreach (var logEntry in parser.Parse(reader)) {
     // ...
 }
@@ -341,6 +341,14 @@ class LineParser {
 ```
 
 每给定一行日志 `logRecord`，`LineParser` 在内部将会解析并识别日志类型，并根据日志类型创建相应的对象，来保存解析结果，统一以 `LogEntry` 基类返回。
+
+> [!TIP]
+>
+> 在进行开发之前，请在终端输入如下命令以确认你当前位于 `homework/01-basic` 分支：
+>
+> ```shell
+> git branch
+> ```
 
 > [!NOTE]
 >
