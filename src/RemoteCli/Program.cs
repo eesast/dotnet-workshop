@@ -116,32 +116,161 @@ namespace RemoteCli
 
         private static async Task ShowLogFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var response = await client.GetLogFilesAsync(new Empty());
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                return;
+            }
+
+            Console.WriteLine($"[{string.Join(", ", response.FileNames)}]");
         }
 
         private static int ReadDegreeOfParallelism()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.WriteLine("Please input degree of parallelism (0 uses the logical processor count):");
+            var input = Console.ReadLine();
+            if (input is null)
+            {
+                return -1;
+            }
+
+            if (!int.TryParse(input.Trim(), out var degreeOfParallelism)
+                || degreeOfParallelism < 0)
+            {
+                Console.WriteLine("Degree of parallelism must be a non-negative integer.");
+                return -1;
+            }
+
+            return degreeOfParallelism;
         }
 
         private static List<string> ReadFileNames()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.WriteLine("Please input log file names (comma separated):");
+            var input = Console.ReadLine();
+            if (input is null)
+            {
+                return new List<string>();
+            }
+
+            var fileNames = input
+                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            if (fileNames.Count == 0)
+            {
+                Console.WriteLine("At least one log file name is required.");
+                return new List<string>();
+            }
+
+            return fileNames;
         }
 
         private static async Task AnalyzeFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var degreeOfParallelism = ReadDegreeOfParallelism();
+            if (degreeOfParallelism < 0)
+            {
+                return;
+            }
+
+            var fileNames = ReadFileNames();
+            if (fileNames.Count == 0)
+            {
+                return;
+            }
+
+            var request = new AnalyzeFilesRequest
+            {
+                DegreeOfParallelism = degreeOfParallelism,
+            };
+            request.FileNames.AddRange(fileNames);
+            var response = await client.AnalyzeFilesAsync(request);
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Unable to analyze files: {response.Status.Code}: {response.Status.Message}");
+                return;
+            }
+
+            Console.WriteLine($"Analysis completed: [{string.Join(", ", fileNames)}]");
         }
 
         private static async Task AnalyzeAll(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var degreeOfParallelism = ReadDegreeOfParallelism();
+            if (degreeOfParallelism < 0)
+            {
+                return;
+            }
+
+            var response = await client.AnalyzeAllAsync(new AnalyzeAllRequest
+            {
+                DegreeOfParallelism = degreeOfParallelism,
+            });
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Unable to analyze files: {response.Status.Code}: {response.Status.Message}");
+                return;
+            }
+
+            var filesResponse = await client.GetLogFilesAsync(new Empty());
+            IEnumerable<string> fileNames = filesResponse.Status.Success
+                ? filesResponse.FileNames
+                : Array.Empty<string>();
+            Console.WriteLine($"Analysis completed: [{string.Join(", ", fileNames)}]");
         }
 
         private static async Task GetAnalysisResult(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.WriteLine("Please input log file name:");
+            var fileName = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                Console.WriteLine("Log file name cannot be empty.");
+                return;
+            }
+
+            using var call = client.GetAnalysisResult(new GetAnalysisResultRequest
+            {
+                FileName = fileName.Trim(),
+            });
+            var visitor = new KeyValueVisitor();
+            await foreach (var response in call.ResponseStream.ReadAllAsync())
+            {
+                if (!response.Status.Success)
+                {
+                    Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                    return;
+                }
+
+                switch (response.PayloadCase)
+                {
+                    case GetAnalysisResultResponse.PayloadOneofCase.Header:
+                        var header = response.Header;
+                        switch (header.State)
+                        {
+                            case AnalysisStateEnum.NotAnalyzed:
+                                Console.WriteLine($"File {header.FileName} has not been analyzed yet.");
+                                break;
+                            case AnalysisStateEnum.Failed:
+                                Console.WriteLine($"Analysis failed for {header.FileName}: {header.ErrorMessage}");
+                                break;
+                            case AnalysisStateEnum.Succeeded:
+                                Console.WriteLine($"Analysis result for {header.FileName}:");
+                                break;
+                            default:
+                                Console.WriteLine($"File {header.FileName} has an unknown analysis state.");
+                                break;
+                        }
+                        break;
+                    case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
+                        var keyValues = visitor.Dump(GrpcTypeConverter.ConvertFromGrpc(response.LogEntry));
+                        Console.WriteLine(string.Join(", ",
+                            keyValues.Select(keyValue => $"{keyValue.Key}: {keyValue.Value}")));
+                        break;
+                }
+            }
         }
     }
 }
