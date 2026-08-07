@@ -16,8 +16,8 @@ namespace LogParser.Parser
                     return eventElement.GetString() switch
                     {
                         "call" => LineParser.CreateCall(logRecord),
-                        "request" => throw new NotImplementedException("TODO: T1.2"),
-                        "internal" => throw new NotImplementedException("TODO: T1.2"),
+                        "request" => LineParser.CreateRequest(logRecord),
+                        "internal" => LineParser.CreateInternal(logRecord),
                         _ => throw new FormatException($"Unknown event type: {eventElement.GetString()} in log message: {logRecord.Message}")
                     };
                 }
@@ -50,12 +50,41 @@ namespace LogParser.Parser
 
         private static LogEntry CreateRequest(LogRecord logRecord)
         {
-            throw new NotImplementedException("TODO: T1.2");
+            var requestMessage = JsonSerializer.Deserialize<RequestMessage>(logRecord.Message, options)
+                ?? throw new FormatException($"Failed to deserialize request message: {logRecord.Message}");
+            return new RequestLogEntry(
+                LineNo: logRecord.LineNo,
+                Timestamp: DateTimeOffset.Parse(logRecord.Timestamp),
+                PodName: logRecord.PodName,
+                Severity: ParseSeverity(requestMessage.Severity),
+                RequestId: requestMessage.RequestId,
+                Method: requestMessage.Method,
+                Path: requestMessage.Path,
+                StatusCode: requestMessage.StatusCode
+            );
         }
 
         private static LogEntry CreateInternal(LogRecord logRecord)
         {
-            throw new NotImplementedException("TODO: T1.2");
+            var internalMessage = JsonSerializer.Deserialize<InternalMessage>(logRecord.Message, options)
+                ?? throw new FormatException($"Failed to deserialize internal message: {logRecord.Message}");
+
+            // exception 值的格式："ExceptionName: exception message"
+            // 按 ": " 拆成两部分
+            var parts = internalMessage.Exception.Split(": ", 2, StringSplitOptions.None);
+            if (parts.Length != 2)
+                throw new FormatException(
+                    $"Invalid exception format: '{internalMessage.Exception}'. " +
+                    "Expected format: 'ExceptionName: exception message'");
+
+            return new InternalLogEntry(
+                LineNo: logRecord.LineNo,
+                Timestamp: DateTimeOffset.Parse(logRecord.Timestamp),
+                PodName: logRecord.PodName,
+                Severity: ParseSeverity(internalMessage.Severity),
+                ExceptionName: parts[0],
+                ExceptionMessage: parts[1]
+            );
         }
 
         private static LogSeverity ParseSeverity(string severity)
@@ -77,11 +106,16 @@ namespace LogParser.Parser
         );
 
         private record RequestMessage(
-            // TODO: T1.2
+            [property: JsonRequired] string Severity,
+            [property: JsonRequired] string RequestId,
+            [property: JsonRequired] string Method,
+            [property: JsonRequired] string Path,
+            [property: JsonRequired] int StatusCode
         );
 
         private record InternalMessage(
-            // TODO: T1.2
+            [property: JsonRequired] string Severity,
+            [property: JsonRequired] string Exception
         );
     }
 }
