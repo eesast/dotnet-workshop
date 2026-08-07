@@ -1,0 +1,81 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="LogAnalyzerClient.QueryDialog"
+        d:DesignWidth="460" d:DesignHeight="520"
+        Width="460" Height="520"
+        CanResize="False" WindowStartupLocation="CenterOwner"
+        Title="Query Log Entries">
+    <Grid Margin="15" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" RowSpacing="10">
+
+        <StackPanel Grid.Row="0" Spacing="4">
+            <TextBlock Classes="DialogTitle" Text="Event Type" />
+            <TextBlock Classes="SubtleText" Text="Leave all unchecked to match any event type." />
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <CheckBox Content="Call" Name="CallCheckBox" />
+                <CheckBox Content="Request" Name="RequestCheckBox" />
+                <CheckBox Content="Internal" Name="InternalCheckBox" />
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Spacing="4">
+            <TextBlock Classes="DialogTitle" Text="Severity" />
+            <TextBlock Classes="SubtleText" Text="Leave all unchecked to match any severity." />
+            <StackPanel Orientation="Horizontal" Spacing="16">
+                <CheckBox Content="Info" Name="InfoCheckBox" />
+                <CheckBox Content="Warning" Name="WarningCheckBox" />
+                <CheckBox Content="Error" Name="ErrorCheckBox" />
+            </StackPanel>
+        </StackPanel>
+
+        <StackPanel Grid.Row="2" Spacing="4">
+            <TextBlock Classes="DialogTitle" Text="Service (pod name)" />
+            <TextBox Name="ServiceTextBox"
+                     PlaceholderText="e.g. gateway  (matches gateway-0, gateway-1, ...)" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="3" Spacing="4">
+            <TextBlock Classes="DialogTitle" Text="Request ID contains" />
+            <TextBox Name="RequestIdTextBox"
+                     PlaceholderText="substring match; Internal logs have no request id" />
+        </StackPanel>
+
+        <Grid Grid.Row="4" ColumnDefinitions="*,*" ColumnSpacing="12">
+            <StackPanel Grid.Column="0" Spacing="4">
+                <TextBlock Classes="DialogTitle" Text="Start time (inclusive)" />
+                <TextBox Name="StartTimeTextBox"
+                         PlaceholderText="e.g. 2026-06-05" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Spacing="4">
+                <TextBlock Classes="DialogTitle" Text="End time (inclusive)" />
+                <TextBox Name="EndTimeTextBox"
+                         PlaceholderText="e.g. 2026-06-05T17:00:00Z" />
+            </StackPanel>
+        </Grid>
+
+        <TextBlock Grid.Row="5"
+                   Classes="SubtleText"
+                   Text="Time format: date (2026-06-05) or full ISO 8601. Times are interpreted as UTC. Leave blank for no bound."
+                   TextWrapping="Wrap" />
+
+        <TextBlock Grid.Row="6"
+                   Name="ErrorTextBlock"
+                   Foreground="OrangeRed"
+                   TextWrapping="Wrap" />
+
+        <StackPanel Grid.Row="7"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="5">
+            <Button Classes="PrimaryButton"
+                    Content="Query"
+                    IsDefault="True"
+                    Click="QueryButton_Click" />
+            <Button Classes="SecondaryButton"
+                    Content="Cancel"
+                    Click="CancelButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

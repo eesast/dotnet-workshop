@@ -1,5 +1,6 @@
 ﻿using LogParser.Models;
 using LogParser.Parser;
+using LogParser.Parquet;
 using System.Diagnostics.CodeAnalysis;
 
 namespace LogAnalyzer
@@ -61,9 +62,8 @@ namespace LogAnalyzer
                 _analysisResults.Clear();
                 if (directoryPath is not null)
                 {
-                    var logFiles = Directory.EnumerateFiles(directoryPath, "*.log", SearchOption.TopDirectoryOnly)
-                        .Select(filePath => Path.GetFileName(filePath))
-                        .OrderBy(fileName => fileName);
+                    // 同时收集 .log 与 .parquet 两类日志文件，统一按文件名排序。
+                    var logFiles = EnumerateLogFiles(directoryPath);
                     foreach (var fileName in logFiles)
                     {
                         _logFiles.Add(fileName, new FileInfo(Path.Join(_currentDirectory, fileName)));
@@ -95,6 +95,18 @@ namespace LogAnalyzer
             {
                 return _analysisResults.TryGetValue(fileName, out result);
             }
+        }
+
+        /// <summary>
+        /// 枚举目录中受支持的日志文件（.log 与 .parquet），按文件名排序返回。
+        /// </summary>
+        private static IEnumerable<string> EnumerateLogFiles(string directoryPath)
+        {
+            var logFiles = Directory.EnumerateFiles(directoryPath, "*.log", SearchOption.TopDirectoryOnly)
+                .Select(Path.GetFileName)!;
+            var parquetFiles = Directory.EnumerateFiles(directoryPath, "*.parquet", SearchOption.TopDirectoryOnly)
+                .Select(Path.GetFileName)!;
+            return logFiles.Concat(parquetFiles).OrderBy(fileName => fileName)!;
         }
 
         public void AnalyzeAll(int degreeOfParallelism)
@@ -235,10 +247,10 @@ namespace LogAnalyzer
                 AnalysisResult result;
                 try
                 {
-                    // Parse file
-                    using var reader = new StreamReader(file.FullName);
-                    // 使用 ToList() 强制立即求值，确保解析过程中的异常在本 try 块内被捕获
-                    var entries = parser.Parse(reader).ToList();
+                    // 按扩展名分派解析器：.log 走文本 CSV 解析；.parquet 走 Parquet 读取。
+                    IReadOnlyList<LogEntry> entries = Path.GetExtension(file.Name).Equals(".parquet", StringComparison.OrdinalIgnoreCase)
+                        ? ParquetLogReader.ReadAsync(file.FullName).GetAwaiter().GetResult()
+                        : ParseLogFile(parser, file.FullName);
                     result = new AnalysisResult(
                         FileName: file.Name,
                         FullName: file.FullName,
@@ -268,6 +280,16 @@ namespace LogAnalyzer
                     _analysisResults[file.Name] = result;
                 }
             }
+        }
+
+        /// <summary>
+        /// 用文本解析器解析 .log 文件，立即求值以确保解析异常在本处被捕获。
+        /// </summary>
+        private static IReadOnlyList<LogEntry> ParseLogFile(LogFileParser parser, string fullName)
+        {
+            using var reader = new StreamReader(fullName);
+            // 使用 ToList() 强制立即求值，确保解析过程中的异常在本 try 块内被捕获
+            return parser.Parse(reader).ToList();
         }
     }
 }

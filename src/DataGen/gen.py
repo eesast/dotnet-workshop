@@ -197,6 +197,74 @@ def make_internal_event() -> Tuple[str, Dict[str, object]]:
     return choose_pod(service), message
 
 
+# 一次完整请求贯穿的最多跳数与出错概率（用于 T5.2 链路追踪数据）。
+TRACE_MAX_HOPS = 3
+TRACE_ERROR_PROBABILITY = 0.25
+
+
+def make_trace(start_time: datetime) -> Tuple[List[CsvLogLine], datetime]:
+    """生成一条完整调用链（T5.2 链路追踪用）。
+
+    一次外部请求从入口服务进入，沿 CALL_TOPOLOGY 随机游走若干跳，所有事件共享同一个
+    request-id，时间戳严格递增。约 1/4 的链路会在最后一跳失败（call 为 ERROR + 一个
+    internal 错误），用于演示瀑布图里的「出错段标红」。
+
+    返回 (该链路产生的全部日志行, 链路结束后的时间)。
+    """
+    request_id = str(uuid.uuid4())
+
+    # 沿调用拓扑随机游走一条有向路径，至少入口 + 1 跳。
+    path: List[str] = [choose_service_with_outgoing_edges()]
+    for _ in range(TRACE_MAX_HOPS):
+        targets = CALL_TOPOLOGY.get(path[-1], [])
+        if not targets:
+            break
+        path.append(random.choice(targets))
+
+    is_error_trace = random.random() < TRACE_ERROR_PROBABILITY
+    last_hop_index = len(path) - 2  # 最后一跳：src=path[i], dst=path[i+1]
+
+    lines: List[CsvLogLine] = []
+    t = start_time
+
+    # 入口服务收到外部请求。
+    entry_pod, entry_msg = make_request_event(path[0], request_id)
+    lines.append(CsvLogLine(0, t, entry_pod, entry_msg))
+
+    for i in range(len(path) - 1):
+        src, dst = path[i], path[i + 1]
+        duration = random.randint(5, 250)
+        t = t + timedelta(milliseconds=random.randint(MIN_TIME_STEP_MS, 200))
+
+        fail_here = is_error_trace and i == last_hop_index
+        call_msg = {
+            "severity": "ERROR" if fail_here else "INFO",
+            "event": "call",
+            "request-id": request_id,
+            "target-service": dst,
+            "duration-ms": duration,
+        }
+        lines.append(CsvLogLine(0, t, choose_pod(src), call_msg))
+
+        if fail_here:
+            # 出错跳：补一条 internal 错误，便于在瀑布图中看到红色错误段。
+            t = t + timedelta(milliseconds=random.randint(MIN_TIME_STEP_MS, 100))
+            exc_name, exc_message = random.choice(ERROR_EXCEPTIONS)
+            internal_msg = {
+                "severity": "ERROR",
+                "event": "internal",
+                "exception": f"{exc_name}: {exc_message}",
+            }
+            lines.append(CsvLogLine(0, t, choose_pod(dst), internal_msg))
+        else:
+            # 正常跳：下游收到请求。
+            t = t + timedelta(milliseconds=random.randint(MIN_TIME_STEP_MS, 100))
+            req_pod, req_msg = make_request_event(dst, request_id)
+            lines.append(CsvLogLine(0, t, req_pod, req_msg))
+
+    return lines, t
+
+
 def next_timestamp(current: datetime) -> datetime:
     step_ms = random.randint(MIN_TIME_STEP_MS, MAX_TIME_STEP_MS)
     return current + timedelta(milliseconds=step_ms)
@@ -211,10 +279,18 @@ def generate_log_lines(count: int) -> List[CsvLogLine]:
 
     lines: List[CsvLogLine] = []
     current_time = START_TIME
+    produced = 0
 
-    for lineno in range(count):
+    while produced < count:
+        remaining = count - produced
+        # 约 35% 的概率生成一条完整调用链（至少 4 行），其余生成单条独立日志。
+        if remaining >= 4 and random.random() < 0.35:
+            trace_lines, current_time = make_trace(current_time)
+            lines.extend(trace_lines)
+            produced += len(trace_lines)
+            continue
+
         current_time = next_timestamp(current_time)
-
         if random.random() < INTERNAL_EVENT_PROBABILITY:
             pod_name, message = make_internal_event()
         else:
@@ -224,8 +300,14 @@ def generate_log_lines(count: int) -> List[CsvLogLine]:
                 pod_name, message = make_call_event(source_service)
             else:
                 pod_name, message = make_request_event()
+        lines.append(CsvLogLine(0, current_time, pod_name, message))
+        produced += 1
 
-        lines.append(CsvLogLine(lineno, current_time, pod_name, message))
+    # trace 与独立行交错生成，按时间戳排序保证 lineno 与 timestamp 全局单调，
+    # 再统一编号（CsvLogLine 为不可变 dataclass，原地重建）。
+    lines.sort(key=lambda line: line.timestamp)
+    for index, line in enumerate(lines):
+        lines[index] = CsvLogLine(index, line.timestamp, line.pod_name, line.message)
 
     return lines
 
