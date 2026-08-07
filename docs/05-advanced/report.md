@@ -58,7 +58,7 @@ dotnet run --project src/LogAnalyzerClient/LogAnalyzerClient.Desktop
 
 #### 1.2 实现要点
 
-- **依赖**：仅在 `LogParser` 项目引入 `Parquet.Net 6.0.3`（`LogParser.csproj:11`），上层通过 `LogParser` 的包装 API 间接使用，避免污染客户端依赖。
+- **依赖**：在 `LogParser` 项目引入 `Parquet.Net 6.0.3`（`LogParser.csproj:11`），上层通过 `LogParser` 的包装 API 间接使用，避免污染客户端依赖。
 - **Schema 设计**：用 POCO `ParquetLogRow`（`LogParser/Parquet/LogParquetSchema.cs`）描述一张 13 列的「宽而稀疏」表——公共列 `LineNo/Timestamp/PodName/Severity/EventType` 全填，类型专属列（Call 的 `TargetService/DurationMs`、Request 的 `Method/Path/StatusCode`、Internal 的 `ExceptionName/ExceptionMessage`）按行类型填、其余留 `null`。`Timestamp` 用 ISO-8601 round-trip（`"O"`）格式存，枚举统一小写存字符串。
 - **写**：`ParquetLogWriter.WriteAsync`（`LogParser/Parquet/ParquetLogWriter.cs`）把每条 `LogEntry` 经 `ToRow` 映射成 `ParquetLogRow`，再用高层 API `ParquetSerializer.SerializeAsync` 一次落盘，返回行数。
 - **读**：`ParquetLogReader.ReadAsync`（`LogParser/Parquet/ParquetLogReader.cs`）用 `ParquetSerializer.DeserializeAsync<ParquetLogRow>` 读回，再按 `EventType` 重建出 `CallLogEntry/RequestLogEntry/InternalLogEntry` 三种具体记录；遇到未知 `event_type`/`severity` 抛 `FormatException`，会被 `WorkerMain` 捕获、标记分析失败。
@@ -77,7 +77,7 @@ dotnet run --project src/LogAnalyzerClient/LogAnalyzerClient.Desktop
 2. 选中一个文件（左键单击高亮），点右侧 `Analyze → Selected`（或右键 `Analyze File`）完成分析。
 3. **右键**该已分析文件 → `Export to Parquet`，弹出 `Export to Parquet` 对话框：
    - 上方 `Source` 显示源文件名；
-   - `Output Path` 填输出名，可填相对名（如 `basic.parquet`，相对 Agent 当前目录）或绝对路径，省略 `.parquet` 后缀会自动补齐；
+   - `Output Path` 填绝对路径，省略 `.parquet` 后缀会自动补齐；
    - 勾选 `Overwrite if the file already exists` 可覆盖同名文件。
 4. 点 `Export`，成功后弹出 `Exported {N} entries to: {written_path}`。
 5. 点工具栏 `Refresh`，新生成的 `.parquet` 出现在文件列表中。
