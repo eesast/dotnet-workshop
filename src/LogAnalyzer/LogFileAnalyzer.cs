@@ -1,7 +1,6 @@
 ﻿using LogParser.Models;
 using LogParser.Parser;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.X509Certificates;
 
 namespace LogAnalyzer
 {
@@ -141,7 +140,7 @@ namespace LogAnalyzer
                 /*
                  * Set _isAnalyzing
                  */
-                // TODO: T2.2
+                _isAnalyzing = true;
             }
 
             try
@@ -154,7 +153,10 @@ namespace LogAnalyzer
                  * Unset _isAnalyzing
                  * Remember to lock _syncRoot to prevent data race
                  */
-                // TODO: T2.2
+                lock (_syncRoot)
+                {
+                    _isAnalyzing = false;
+                }
             }
         }
 
@@ -169,7 +171,15 @@ namespace LogAnalyzer
                      * Filter unparsed files.
                      * If there is an unknown file, throw System.InvalidOperationException.
                      */
-                    throw new NotImplementedException("TODO: T2.2");
+                    if (!_analysisResults.TryGetValue(file.Name, out var existing))
+                    {
+                        throw new InvalidOperationException($"Unknown file '{file.Name}'.");
+                    }
+                    // 跳过已经分析过且保存了分析结果的文件（Succeeded / Failed），只保留未分析的文件
+                    if (existing.State == AnalysisState.NotAnalyzed)
+                    {
+                        logFilesToParse.Add(file);
+                    }
                 }
             }
 
@@ -183,7 +193,11 @@ namespace LogAnalyzer
             /*
              * Enqueue log files
              */
-            // TODO: T2.2
+            foreach (var file in logFilesToParse)
+            {
+                queue.Enqueue(file);
+            }
+            queue.CompleteAdding();
 
             degreeOfParallelism = Math.Max(Math.Min(degreeOfParallelism, logFilesToParse.Count), 1);
             var workers = new Thread[degreeOfParallelism];
@@ -194,13 +208,22 @@ namespace LogAnalyzer
                 /*
                  * Create and start threads to run `WorkerMain`
                  */
-                // TODO: T2.2
+                var thread = new Thread(() => WorkerMain(workerId, queue))
+                {
+                    IsBackground = true,
+                    Name = threadName,
+                };
+                workers[i] = thread;
+                thread.Start();
             }
 
             /*
              * Wait for (join) all threads to end
              */
-            // TODO: T2.2
+            foreach (var thread in workers)
+            {
+                thread.Join();
+            }
         }
 
         private void WorkerMain(int workerId, WorkQueue<FileInfo> queue)
@@ -213,19 +236,37 @@ namespace LogAnalyzer
                 try
                 {
                     // Parse file
-                    throw new NotImplementedException("TODO: T2.2");
+                    using var reader = new StreamReader(file.FullName);
+                    // 使用 ToList() 强制立即求值，确保解析过程中的异常在本 try 块内被捕获
+                    var entries = parser.Parse(reader).ToList();
+                    result = new AnalysisResult(
+                        FileName: file.Name,
+                        FullName: file.FullName,
+                        State: AnalysisState.Succeeded,
+                        Entries: entries,
+                        ErrorMessage: null,
+                        WorkerId: workerId);
                 }
                 catch (Exception ex)
                 {
                     // Save exception message to result
-                    throw new NotImplementedException("TODO: T2.2");
+                    result = new AnalysisResult(
+                        FileName: file.Name,
+                        FullName: file.FullName,
+                        State: AnalysisState.Failed,
+                        Entries: Array.Empty<LogEntry>(),
+                        ErrorMessage: ex.Message,
+                        WorkerId: workerId);
                 }
 
                 /*
                  * Save parse result.
                  * [!Important] Remember to lock _syncRoot to prevent data race.
                  */
-                throw new NotImplementedException("TODO: T2.2");
+                lock (_syncRoot)
+                {
+                    _analysisResults[file.Name] = result;
+                }
             }
         }
     }
