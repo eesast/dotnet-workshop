@@ -116,32 +116,151 @@ namespace RemoteCli
 
         private static async Task ShowLogFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var response = await client.GetLogFilesAsync(new Empty());
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Error: {response.Status.Message}");
+                return;
+            }
+            var files=response.FileNames;
+            if (files.Count == 0)
+            {
+                Console.WriteLine("No log files found in the current directory.");
+                return;
+            }
+            int index = 1;
+            foreach (var file in files)
+            {
+                Console.WriteLine($"{index}.{file}");
+                index++;
+            }
         }
 
         private static int ReadDegreeOfParallelism()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            int degree = 0;
+            while (true)
+            {
+                Console.WriteLine("Please input degree of parallelism:");
+                var degreeStr = Console.ReadLine();
+                if (degreeStr is null) return 0; 
+                if (!int.TryParse(degreeStr, out degree))
+                {
+                    Console.WriteLine("Invalid number, please try again.");
+                    continue;
+                }
+                break;
+            }
+            return degree;
         }
 
         private static List<string> ReadFileNames()
         {
-            throw new NotImplementedException("TODO: T3.2");
-        }
+            while (true)
+            {
+                Console.WriteLine("Please input log files to analyze (separated by comma):");
+                var str = Console.ReadLine();
+                if (str is null) return new List<string>();
+                var selectedFiles = str.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(f => f.Trim())
+                                    .ToList();
+                if (selectedFiles.Count == 0)
+                {
+                    Console.WriteLine("No files specified, please try again.");
+                    continue;
+                }
+                return selectedFiles;
+            }
+                }
 
         private static async Task AnalyzeFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var files = ReadFileNames();
+            if (files.Count == 0) return;
+            int degree = ReadDegreeOfParallelism();
+            if (degree == 0) return;
+            var request = new AnalyzeFilesRequest { DegreeOfParallelism = degree };
+            request.FileNames.AddRange(files);
+            var response = await client.AnalyzeFilesAsync(request);
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Error: {response.Status.Message}");
+            }
+            else
+            {
+                Console.WriteLine("Analysis started successfully.");
+            }
         }
 
         private static async Task AnalyzeAll(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            int degree = ReadDegreeOfParallelism();
+            if(degree==0){return;}
+            var request = new AnalyzeAllRequest { DegreeOfParallelism = degree };
+            var response = await client.AnalyzeAllAsync(request);
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Error: {response.Status.Message}");
+            }
+            else
+            {
+                Console.WriteLine("Analysis started successfully.");
+            }
         }
 
         private static async Task GetAnalysisResult(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
-        }
-    }
+            Console.WriteLine("Please input log file name:");
+            var fileName = Console.ReadLine()?.Trim();
+            if (string.IsNullOrEmpty(fileName))
+            {
+                Console.WriteLine("Invalid file name.");
+                return;
+            }
+            var request = new GetAnalysisResultRequest { FileName = fileName };
+            using var call = client.GetAnalysisResult(request);
+            var visitor = new KeyValueVisitor();
+            try
+            {
+                await foreach (var response in call.ResponseStream.ReadAllAsync())
+                {
+                    if (!response.Status.Success)
+                    {
+                        Console.WriteLine($"Error: {response.Status.Message}");
+                        return;
+                    }
+                    switch (response.PayloadCase)
+                    {
+                        case GetAnalysisResultResponse.PayloadOneofCase.Header:
+                            switch (response.Header.State)
+                            {
+                                case AnalysisStateEnum.NotAnalyzed:
+                                    Console.WriteLine("Not analyzed.");
+                                    break;
+                                case AnalysisStateEnum.Failed:
+                                    Console.WriteLine($"Failed: {response.Header.ErrorMessage}");
+                                    break;
+                                case AnalysisStateEnum.Succeeded:
+                                    break;
+                            }
+                            break;
+
+                        case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
+                            var entry = GrpcTypeConverter.ConvertFromGrpc(response.LogEntry);
+                            var logDict = visitor.Dump(entry);
+                            foreach (var kvp in logDict)
+                            {
+                                Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+                            }
+                            Console.WriteLine("------------------------");
+                            break;
+                    }
+                }
+            }
+            catch (RpcException ex)
+            {
+                Console.WriteLine($"RPC Error: {ex.Status.Detail}");
+            }
+                }
+            }
 }
