@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Avalonia.Controls.Embedding.Offscreen;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -132,31 +133,186 @@ namespace LogAnalyzerClient.ViewModels
         {
             await WithClientNotNull(async () =>
             {
-                throw new NotImplementedException("TODO: T4.1");
+                var response =await _client!.GetLogFilesAsync(new Empty());
+                if (response.Status.Success)
+                {
+                    LogFiles.Clear();
+                    foreach(var FileName in response.FileNames)
+                    {
+                        LogFiles.Add(new LogFileItem(FileName));
+                    }
+                }
+                else
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", 
+                $"{response.Status.Code}: {response.Status.Message}");
+                }
             });
+        }
+        private bool TryPraseDegreeOfParallelism(out int dop)
+        {
+            if(!int.TryParse(DegreeOfParallelismText,out dop)||dop < 0)
+            {
+                _=DialogHelper.ShowMessageDialogAsync("Error", "Degree of Parallelism (DoP) must be a non-negative integer.");
+                return false;
+            }
+            return true;
         }
 
         [RelayCommand]
         private async Task AnalyzeSelectedFilesAsync()
         {
-            throw new NotImplementedException("TODO: T4.1");
+            if (!TryPraseDegreeOfParallelism(out int dop))
+            {
+                return;
+            }
+            if (SelectedFiles == null || SelectedFiles.Count == 0)
+            {
+                await DialogHelper.ShowMessageDialogAsync("Warning", "Please select at least one file from the list.");
+                return;
+            }
+            await WithClientNotNull(async () =>{
+                var request=new AnalyzeFilesRequest
+                {
+                    DegreeOfParallelism=dop,
+                };
+                request.FileNames.AddRange(SelectedFiles);
+                var response=await _client!.AnalyzeFilesAsync(request);
+                if (response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Success", "Successfully submitted the analysis task for the selected files!");
+                }
+                else
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", 
+                $"{response.Status.Code}: {response.Status.Message}");
+                }
+            });
         }
 
-        /*
-         * TODO: T4.1
-         * Add AnalyzeAllAsync ReplayCommand
-         */
+        [RelayCommand]
+        private async Task AnalyzeAllAsync()
+        {
+            if (!TryPraseDegreeOfParallelism(out int dop))
+            {
+                return;
+            }
+            await WithClientNotNull(async () =>
+            {
+                var request= new AnalyzeAllRequest
+                {
+                    DegreeOfParallelism=dop,
+                };
+                var response =await _client!.AnalyzeAllAsync(request);
+                if (response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Success", "Successfully submitted the analysis task for all files!");
+                }
+                else
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", 
+                $"{response.Status.Code}: {response.Status.Message}");
+                }
+            });
+        }
 
         [RelayCommand]
         private async Task AnalyzeRightClickedFileAsync()
         {
-            throw new NotImplementedException("TODO: T4.1");
+            if(!TryPraseDegreeOfParallelism(out int dop))
+            {
+                return;
+            }
+            if (SelectedLogFile == null)
+            {
+                await DialogHelper.ShowMessageDialogAsync("Warning", "Please select a file to analyze.");
+                return;
+            }
+            await WithClientNotNull(async () =>
+            {
+                var request=new AnalyzeFilesRequest
+                {
+                    DegreeOfParallelism=dop,
+                };
+                request.FileNames.Add(SelectedLogFile.FileName);
+                var response=await _client!.AnalyzeFilesAsync(request);
+                if (response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Success", $"Successfully submitted the analysis task for {SelectedLogFile.FileName}!");
+
+                }
+                else
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", 
+                $"{response.Status.Code}: {response.Status.Message}");
+                }
+            });
         }
 
         [RelayCommand]
         private async Task GetAnalysisResultAsync()
         {
-            throw new NotImplementedException("TODO: T4.1");
+            if (SelectedLogFile == null)
+            {
+                await DialogHelper.ShowMessageDialogAsync("Warning", "Please select a file to view results.");
+                return;
+            }
+            await WithClientNotNull(async () =>
+            {
+                ResultEntries.Clear();
+                var request =new GetAnalysisResultRequest
+                {
+                    FileName=SelectedLogFile.FileName
+                };
+                using var call=_client!.GetAnalysisResult(request);
+                try
+                {
+                    while(await call.ResponseStream.MoveNext(System.Threading.CancellationToken.None))
+                    {
+                        var response=call.ResponseStream.Current;
+                        if (!response.Status.Success)
+                        {
+                            await DialogHelper.ShowMessageDialogAsync("Error", $"{response.Status.Code}: {response.Status.Message}");
+                            break;
+                        }
+                        var fields =new List<LogFieldItem>();
+                        string? errorMessage =null;
+                        if (response.PayloadCase == GetAnalysisResultResponse.PayloadOneofCase.Header)
+                        {
+                            var header = response.Header;
+                            fields.Add(new LogFieldItem("Type", "Header"));
+                            fields.Add(new LogFieldItem("State", header.State.ToString()));
+                            
+                            if (header.HasErrorMessage) 
+                            {
+                                errorMessage = header.ErrorMessage;
+                            }
+                        }
+                        else if (response.PayloadCase == GetAnalysisResultResponse.PayloadOneofCase.LogEntry)
+                        {
+                            var entry = response.LogEntry;
+                            fields.Add(new LogFieldItem("Type", "LogEntry"));
+                            if (entry.EntryCase == LogEntryMessage.EntryOneofCase.CallLogEntry)
+                            {
+                                fields.Add(new LogFieldItem("Severity", entry.CallLogEntry.Severity.ToString()));
+                            }
+                            else if (entry.EntryCase == LogEntryMessage.EntryOneofCase.RequestLogEntry)
+                            {
+                                fields.Add(new LogFieldItem("Severity", entry.RequestLogEntry.Severity.ToString()));
+                            }
+                            else if (entry.EntryCase == LogEntryMessage.EntryOneofCase.InternalLogEntry)
+                            {
+                                fields.Add(new LogFieldItem("Severity", entry.InternalLogEntry.Severity.ToString()));
+                            }
+                        }
+                        ResultEntries.Add(new LogFields(ResultEntries.Count + 1, fields, errorMessage));
+                    }
+                }
+                catch(RpcException ex)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", $"Stream interrupted: {ex.Status.Detail}");
+                }
+            });
         }
 
         [RelayCommand]
