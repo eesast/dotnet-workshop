@@ -4,7 +4,6 @@ using Grpc.Net.Client;
 using LogAnalyzerRpc;
 using LogAnalyzerRpc.Protos;
 using LogParser.Visitors;
-using Microsoft.Extensions.Logging;
 
 namespace RemoteCli
 {
@@ -18,11 +17,39 @@ namespace RemoteCli
                 ?? Environment.GetEnvironmentVariable("LOG_ANALYZER_AGENT_ADDRESS")
                 ?? "http://localhost:5000";
             Console.WriteLine($"Connecting to agent at {address}...");
-            using var channel = GrpcChannel.ForAddress(address);
-            var client = new LogAnalyzerAgentServiceClient(channel);
-            _ = await client.PingAsync(new Empty());
+            try
+            {
+                using var channel = GrpcChannel.ForAddress(address);
+                var client = new LogAnalyzerAgentServiceClient(channel);
+                _ = await client.PingAsync(new Empty());
 
-            await ChooseAction(client);
+                await ChooseAction(client);
+            }
+            catch (RpcException ex)
+            {
+                Console.WriteLine($"Failed to connect to agent: {ex.Status.Detail}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to start RemoteCli: {ex.Message}");
+            }
+        }
+
+        private static bool HasOperationError(OperationStatusMessage? status)
+        {
+            if (status is null)
+            {
+                Console.WriteLine("Error: Agent returned a response without an operation status.");
+                return true;
+            }
+
+            if (status.Success)
+            {
+                return false;
+            }
+
+            Console.WriteLine($"Error: {status.Code}: {status.Message}");
+            return true;
         }
 
         private static async Task<bool> InputDirectory(LogAnalyzerAgentServiceClient client)
@@ -35,14 +62,20 @@ namespace RemoteCli
                 {
                     return false;
                 }
+                directory = directory.Trim();
+                if (directory.Length == 0)
+                {
+                    Console.WriteLine("Directory cannot be empty, please try again:");
+                    continue;
+                }
                 var request = new ChangeDirectoryRequest()
                 {
                     DirectoryPath = directory,
                 };
                 var response = await client.ChangeDirectoryAsync(request);
-                if (!response.Status.Success)
+                if (HasOperationError(response.Status))
                 {
-                    Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}, please try again:");
+                    Console.WriteLine("Please try again:");
                     continue;
                 }
                 break;
@@ -67,17 +100,12 @@ namespace RemoteCli
                 Console.Write(">>> ");
                 Console.Out.Flush();
 
-                int choice = 0;
                 var choiceStr = Console.ReadLine();
                 if (choiceStr is null)
                 {
                     return;
                 }
-                try
-                {
-                    choice = int.Parse(choiceStr);
-                }
-                catch (Exception)
+                if (!int.TryParse(choiceStr, out var choice))
                 {
                     Console.WriteLine("Invalid input, please try again.");
                     continue;
@@ -90,58 +118,219 @@ namespace RemoteCli
                     { 3, AnalyzeAll },
                     { 4, GetAnalysisResult }
                 };
-                switch (choice)
+                try
                 {
-                    case 1:
-                    case 2:
-                    case 3:
-                    case 4:
-                        await actions[choice](client);
-                        break;
-                    case 5:
-                        var success = await InputDirectory(client);
-                        if (!success)
-                        {
+                    switch (choice)
+                    {
+                        case 1:
+                        case 2:
+                        case 3:
+                        case 4:
+                            await actions[choice](client);
+                            break;
+                        case 5:
+                            var success = await InputDirectory(client);
+                            if (!success)
+                            {
+                                return;
+                            }
+                            break;
+                        case 6:
                             return;
-                        }
-                        break;
-                    case 6:
-                        return;
-                    default:
-                        Console.WriteLine("Invalid choice, please try again.");
-                        break;
+                        default:
+                            Console.WriteLine("Invalid choice, please try again.");
+                            break;
+                    }
+                }
+                catch (EndOfStreamException)
+                {
+                    return;
+                }
+                catch (RpcException ex)
+                {
+                    Console.WriteLine($"RPC failed: {ex.StatusCode}: {ex.Status.Detail}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Operation failed: {ex.Message}");
                 }
             }
         }
 
         private static async Task ShowLogFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var response = await client.GetLogFilesAsync(new Empty());
+            if (HasOperationError(response.Status))
+            {
+                return;
+            }
+
+            Console.WriteLine($"[{string.Join(", ", response.FileNames)}]");
         }
 
         private static int ReadDegreeOfParallelism()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            while (true)
+            {
+                Console.WriteLine("Please input degree of parallelism:");
+                var input = Console.ReadLine();
+                if (input is null)
+                {
+                    throw new EndOfStreamException("Input ended.");
+                }
+
+                if (int.TryParse(input.Trim(), out var degreeOfParallelism)
+                    && degreeOfParallelism >= 0)
+                {
+                    return degreeOfParallelism;
+                }
+
+                Console.WriteLine("Invalid degree of parallelism, please try again:");
+            }
         }
 
         private static List<string> ReadFileNames()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            while (true)
+            {
+                Console.WriteLine("Please input log file names (comma separated):");
+                var input = Console.ReadLine();
+                if (input is null)
+                {
+                    throw new EndOfStreamException("Input ended.");
+                }
+
+                var fileNames = input
+                    .Split(',')
+                    .Select(fileName => fileName.Trim())
+                    .Where(fileName => fileName.Length > 0)
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList();
+
+                if (fileNames.Count > 0)
+                {
+                    return fileNames;
+                }
+
+                Console.WriteLine("No log file names provided, please try again:");
+            }
         }
 
         private static async Task AnalyzeFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var degreeOfParallelism = ReadDegreeOfParallelism();
+            var fileNames = ReadFileNames();
+
+            var response = await client.AnalyzeFilesAsync(new AnalyzeFilesRequest
+            {
+                DegreeOfParallelism = degreeOfParallelism,
+                FileNames = { fileNames }
+            });
+            if (HasOperationError(response.Status))
+            {
+                return;
+            }
+
+            Console.WriteLine($"Analysis completed: [{string.Join(", ", fileNames)}]");
         }
 
         private static async Task AnalyzeAll(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var degreeOfParallelism = ReadDegreeOfParallelism();
+            var filesResponse = await client.GetLogFilesAsync(new Empty());
+            if (HasOperationError(filesResponse.Status))
+            {
+                return;
+            }
+
+            var response = await client.AnalyzeAllAsync(new AnalyzeAllRequest
+            {
+                DegreeOfParallelism = degreeOfParallelism,
+            });
+            if (HasOperationError(response.Status))
+            {
+                return;
+            }
+
+            Console.WriteLine(
+                $"Analysis completed: [{string.Join(", ", filesResponse.FileNames)}]");
         }
 
         private static async Task GetAnalysisResult(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.WriteLine("Please input log file name:");
+            var input = Console.ReadLine();
+            if (input is null)
+            {
+                return;
+            }
+
+            var fileName = input.Trim();
+            if (fileName.Length == 0)
+            {
+                Console.WriteLine("File name cannot be empty.");
+                return;
+            }
+
+            var request = new GetAnalysisResultRequest { FileName = fileName };
+            AnalysisResultHeaderMessage? header = null;
+            var entries = new List<LogEntryMessage>();
+            using var call = client.GetAnalysisResult(request);
+            await foreach (var response in call.ResponseStream.ReadAllAsync())
+            {
+                if (HasOperationError(response.Status))
+                {
+                    return;
+                }
+
+                switch (response.PayloadCase)
+                {
+                    case GetAnalysisResultResponse.PayloadOneofCase.Header:
+                        header = response.Header;
+                        break;
+                    case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
+                        entries.Add(response.LogEntry);
+                        break;
+                    default:
+                        Console.WriteLine("Error: Agent returned an empty analysis payload.");
+                        return;
+                }
+            }
+
+            if (header is null)
+            {
+                Console.WriteLine("Error: Agent did not return an analysis result header.");
+                return;
+            }
+
+            switch (header.State)
+            {
+                case AnalysisStateEnum.NotAnalyzed:
+                    Console.WriteLine($"File {fileName} has not been analyzed yet.");
+                    break;
+
+                case AnalysisStateEnum.Failed:
+                    Console.WriteLine(
+                        $"Analysis failed for {fileName}: "
+                        + (header.HasErrorMessage ? header.ErrorMessage : "Unknown error"));
+                    break;
+
+                case AnalysisStateEnum.Succeeded:
+                    Console.WriteLine($"Analysis result for {fileName}:");
+                    var visitor = new KeyValueVisitor();
+                    foreach (var entryMessage in entries)
+                    {
+                        var entry = GrpcTypeConverter.ConvertFromGrpc(entryMessage);
+                        var values = visitor.Dump(entry);
+                        Console.WriteLine(string.Join(", ",
+                            values.Select(pair => $"{pair.Key}: {pair.Value}")));
+                    }
+                    break;
+
+                default:
+                    Console.WriteLine($"Unknown analysis state for {fileName}: {header.State}");
+                    break;
+            }
         }
     }
 }
