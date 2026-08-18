@@ -42,7 +42,7 @@ namespace RemoteCli
                 var response = await client.ChangeDirectoryAsync(request);
                 if (!response.Status.Success)
                 {
-                    Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}, please try again:");
+                    Console.WriteLine($"Error: {response.Status.Code}\nMessage:{response.Status.Message}, please try again:");
                     continue;
                 }
                 break;
@@ -120,7 +120,7 @@ namespace RemoteCli
             var response = await client.GetLogFilesAsync(request);
             if (!response.Status.Success)
             {
-                Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                Console.WriteLine($"Error: {response.Status.Code}\nMessage:{response.Status.Message}");
                 return;
             }
 
@@ -191,7 +191,7 @@ namespace RemoteCli
             var response = await client.AnalyzeFilesAsync(request);
             if (!response.Status.Success)
             {
-                Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                Console.WriteLine($"Error: {response.Status.Code}\nMessage:{response.Status.Message}");
                 return;
             }
         }
@@ -206,7 +206,7 @@ namespace RemoteCli
             var response = await client.AnalyzeAllAsync(request);
             if (!response.Status.Success)
             {
-                Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                Console.WriteLine($"Error: {response.Status.Code}\nMessage:{response.Status.Message}");
                 return;
             }
         }
@@ -231,7 +231,7 @@ namespace RemoteCli
                 {
                     if (!response.Status.Success)
                     {
-                        Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                        Console.WriteLine($"Error: {response.Status.Code}\nMessage:{response.Status.Message}");
                         break;
                     }
                     else

@@ -203,7 +203,7 @@ namespace LogAnalyzerAgent.Applications
                         {
                             Success = false,
                             Code = AgentErrorCode.FileNotFound,
-                            Message = $"File not found: {request.FileName}"
+                            Message = $"{request.FileName} not found."
                         }
                     });
                     return responses;
