@@ -123,21 +123,20 @@ namespace RemoteCli
                 Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
                 return;
             }
-            else
+
+            Console.WriteLine("Log files:");
+            foreach (var file in response.FileNames)
             {
-                Console.WriteLine("Log files:");
-                foreach (var file in response.FileNames)
-                {
-                    Console.WriteLine($"- {file}");
-                }
+                Console.WriteLine($"- {file}");
             }
+
         }
 
         private static int ReadDegreeOfParallelism()
         {
             while (true)
             {
-                Console.WriteLine("Please input degree of parallelism (>0):");
+                Console.WriteLine("Please input degree of parallelism (>=0, 0 for processor count):");
                 var input = Console.ReadLine();
                 if (input is null)
                 {
@@ -148,7 +147,7 @@ namespace RemoteCli
                     var degree = int.Parse(input);
                     if (degree < 0)
                     {
-                        Console.WriteLine("Degree of parallelism must be greater than 0, please try again.");
+                        Console.WriteLine("Degree of parallelism must be non-negative, please try again.");
                         continue;
                     }
                     return degree;
@@ -164,7 +163,7 @@ namespace RemoteCli
         {
             while (true)
             {
-                Console.WriteLine("Please input log file names (comma separated):");
+                Console.WriteLine("Please input log file names (comma separated, e.g. basic.log,basic-fail.log):");
                 var input = Console.ReadLine();
                 if (input is null)
                 {
@@ -216,6 +215,7 @@ namespace RemoteCli
         {
             while (true)
             {
+                Console.WriteLine("Please input log file name (e.g. basic.log):");
                 var fileName = Console.ReadLine();
                 if (fileName is null)
                 {
