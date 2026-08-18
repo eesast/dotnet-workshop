@@ -399,7 +399,7 @@ builder.Services.AddSingleton<AgentService>();
 
 gRPC，核心是 RPC，即远程过程调用。「过程」一词，在现代编程语言中体现为函数或方法。因此，RPC 的核心含义就是能让我们调用网络服务就仿佛是在调用本地函数一样。因此，我们编写的 `RemoteCli` 就可以由上一节编写的 `LocalCli` 改装得到。我们需要做的是将 `LocalCli` 中对 `LogFileAnalyzer` 的函数调用修改为对应的 gRPC 调用，并对远程的需求做一些调整，即可完成 `RemoteCli` 的编写。
 
-为了给下一节的图形界面打好基础，我们本节要求，`RemoteCli` 对 gRPC 的调用 **必须全为异步调用** ，均需要调用 gRPC 的异步版本（即方法名后多加了一个 `Async` 的调用版本），因此 `RemoteCli` 将含有大量的 `async` 方法。可以看到，C\# 的 `Main` 方法也已经声明为了 `async` 方法。具体可以参考代码框架已经给出的 `InputDirectory` 实现中的 `var response = await client.ChangeDirectoryAsync(request)`，调用的是 `client.ChangeDirectoryAsync` 而非 `client.ChangeDirectory`。
+我们本节的控制台程序没有在 gRPC 调用期间实时响应用户输入的需求，使用同步与异步差别不大。但为了给下一节的图形界面打好基础，我们本节要求，`RemoteCli` 对 gRPC 的调用 **必须全为异步调用** ，均需要调用 gRPC 的异步版本（即方法名后多加了一个 `Async` 的调用版本），因此 `RemoteCli` 将含有大量的 `async` 方法。可以看到，C\# 的 `Main` 方法也已经声明为了 `async` 方法。具体可以参考代码框架已经给出的 `InputDirectory` 实现中的 `var response = await client.ChangeDirectoryAsync(request)`，调用的是 `client.ChangeDirectoryAsync` 而非 `client.ChangeDirectory`。
 
 但此时我们的调试方式和以往相比会存在一些不同。我们以往的程序都是调试单一的可执行程序，但对网络程序我们需要服务器和客户端同时启动，而 Visual Studio 同时只能调试一个程序，这就需要我们在 Visual Studio 外启动我们的另一个程序。我们需要使用 Visual Studio 将一个项目设置为启动项目（参见 `00-prepare` 中 `guidance.md` 介绍的方法），而对于另一个项目，我们需要手动启动它的可执行文件。而 .NET 程序编译出的可执行文件的结果位于项目所在目录（`.csproj` 文件所在的目录中的 `bin/[Debug|Release]/net10.0/` 目录中，存在一个和项目同名的可执行文件。
 

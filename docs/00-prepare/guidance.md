@@ -414,9 +414,9 @@ git push origin "homework/01-basic"
 
 ![associate-issue](./assets/associate-issue.png)
 
+`ISSUE-NUMBER` 可以在 [作业提交通道一览](https://github.com/eesast/dotnet-workshop/issues/71) 中的 Sub-issues 区域查看。
 
-
-[示例 PR](https://github.com/eesast/dotnet-workshop/pull/37)
+此外，我们提供了 [示例 PR](https://github.com/eesast/dotnet-workshop/pull/37) 供参考。
 
 
 
