@@ -112,22 +112,117 @@ namespace LocalCli
 
         private static void ShowLogFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            var files = analyzer.GetLogFiles();
+            if (files.Count == 0)
+            {
+                Console.WriteLine("No log files found.");
+                return;
+            }
+
+            Console.WriteLine("Log files:");
+            foreach (var file in files)
+            {
+                Console.WriteLine($"- {file}");
+            }
         }
 
         private static void AnalyzeFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Input comma-separated log file names:");
+            var input = Console.ReadLine();
+            if (input is null)
+            {
+                return;
+            }
+
+            var fileNames = input.Split(',')
+                .Select(fileName => fileName.Trim())
+                .Where(fileName => !string.IsNullOrEmpty(fileName))
+                .Distinct()
+                .ToList();
+            if (fileNames.Count == 0)
+            {
+                Console.WriteLine("No file name was provided.");
+                return;
+            }
+
+            try
+            {
+                analyzer.AnalyzeFiles(ReadDegreeOfParallelism(), fileNames);
+                Console.WriteLine("Analysis completed.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Analysis failed: {ex.Message}");
+            }
         }
 
         private static void AnalyzeAll(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            try
+            {
+                analyzer.AnalyzeAll(ReadDegreeOfParallelism());
+                Console.WriteLine("Analysis completed.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Analysis failed: {ex.Message}");
+            }
         }
 
         private static void GetAnalysisResult(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Input a log file name:");
+            var fileName = Console.ReadLine()?.Trim();
+            if (string.IsNullOrEmpty(fileName))
+            {
+                Console.WriteLine("File name cannot be empty.");
+                return;
+            }
+
+            if (!analyzer.TryGetAnalysisResult(fileName, out var result))
+            {
+                Console.WriteLine($"Log file '{fileName}' does not exist in the current directory.");
+                return;
+            }
+
+            switch (result!.State)
+            {
+                case AnalysisState.NotAnalyzed:
+                    Console.WriteLine($"Log file '{fileName}' has not been analyzed.");
+                    break;
+                case AnalysisState.Failed:
+                    Console.WriteLine($"Analysis failed: {result.ErrorMessage}");
+                    break;
+                case AnalysisState.Succeeded:
+                    Console.WriteLine($"Analysis result for '{fileName}' ({result.Entries.Count} entries):");
+                    var visitor = new KeyValueVisitor();
+                    foreach (var entry in result.Entries)
+                    {
+                        Console.WriteLine(string.Join(", ", visitor.Dump(entry).Select(pair => $"{pair.Key}={pair.Value}")));
+                    }
+                    break;
+            }
+        }
+
+        private static int ReadDegreeOfParallelism()
+        {
+            while (true)
+            {
+                Console.WriteLine("Input degree of parallelism (0 = processor count):");
+                var input = Console.ReadLine();
+                if (input is null)
+                {
+                    return 0;
+                }
+
+                if (int.TryParse(input, out var value) && value >= 0)
+                {
+                    return value;
+                }
+
+                Console.WriteLine("Please input a non-negative integer.");
+            }
         }
     }
 }
