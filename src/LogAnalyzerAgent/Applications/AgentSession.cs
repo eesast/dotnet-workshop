@@ -79,22 +79,118 @@ namespace LogAnalyzerAgent.Applications
 
         public Task<ChangeDirectoryResponse> ChangeDirectory(ChangeDirectoryRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new ChangeDirectoryResponse();
+            try
+            {
+                _analyzer.ChangeDirectory(request.DirectoryPath);
+                response.Status = CreateNoErrorOperationStatus();
+                response.CurrentDirectory = _analyzer.CurrentDirectory ?? "";
+                response.FileNames.AddRange(_analyzer.GetLogFiles());
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(ex);
+                _logger.LogError(ex, "An error occurred while changing directory.");
+            }
+            return Task.FromResult(response);
         }
 
         public Task<AnalyzeAllResponse> AnalyzeAll(AnalyzeAllRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new AnalyzeAllResponse();
+            try
+            {
+                _analyzer.AnalyzeAll(request.DegreeOfParallelism);
+                response.Status = CreateNoErrorOperationStatus();
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(ex);
+                _logger.LogError(ex, "An error occurred while analyzing all log files.");
+            }
+            return Task.FromResult(response);
         }
 
         public Task<AnalyzeFilesResponse> AnalyzeFiles(AnalyzeFilesRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new AnalyzeFilesResponse();
+            try
+            {
+                _analyzer.AnalyzeFiles(request.DegreeOfParallelism, request.FileNames);
+                response.Status = CreateNoErrorOperationStatus();
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(ex);
+                _logger.LogError(ex, "An error occurred while analyzing log files.");
+            }
+            return Task.FromResult(response);
         }
 
         public IReadOnlyList<GetAnalysisResultResponse> GetAnalysisResult(GetAnalysisResultRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var responses = new List<GetAnalysisResultResponse>();
+
+            try
+            {
+                if (!_analyzer.TryGetAnalysisResult(request.FileName, out var result) ||
+                    result is null)
+                {
+                    responses.Add(new GetAnalysisResultResponse
+                    {
+                        Status = new OperationStatusMessage
+                        {
+                            Success = false,
+                            Code = AgentErrorCode.FileNotFound,
+                            Message = $"File '{request.FileName}' was not found."
+                        }
+                    });
+                }
+                else
+                {
+                    var header = new AnalysisResultHeaderMessage
+                    {
+                        FileName = result.FileName,
+                        FullName = result.FullName,
+                        State = GrpcTypeConverter.ConvertToGrpc(result.State),
+                        WorkerId = result.WorkerId
+                    };
+
+                    if (result.ErrorMessage is not null)
+                    {
+                        header.ErrorMessage = result.ErrorMessage;
+                    }
+
+                    responses.Add(new GetAnalysisResultResponse
+                    {
+                        Status = CreateNoErrorOperationStatus(),
+                        Header = header
+                    });
+
+                    if (result.State == AnalysisState.Succeeded)
+                    {
+                        foreach (var entry in result.Entries)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            responses.Add(new GetAnalysisResultResponse
+                            {
+                                Status = CreateNoErrorOperationStatus(),
+                                LogEntry = GrpcTypeConverter.ConvertToGrpc(entry)
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                responses.Add(new GetAnalysisResultResponse
+                {
+                    Status = CreateInternalErrorOperationStatus(ex)
+                });
+                _logger.LogError(ex, "An error occurred while retrieving analysis result.");
+            }
+            return responses;
         }
     }
 }
