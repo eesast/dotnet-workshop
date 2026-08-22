@@ -10,6 +10,7 @@
 ![完整功能截图2](./assets/normal-cli2.png)
 ![完整功能截图3](./assets/normal-cli3.png)
 ![完整功能截图4](./assets/normal-cli4.png)
+![完整功能截图5](./assets/normal-cli5.png)
 
 截图中演示了输入目录、显示日志文件、分析指定文件、分析全部文件、查看成功结果等所有常规功能。
 
