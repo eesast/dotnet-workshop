@@ -70,5 +70,5 @@ var callMessage = JsonSerializer.Deserialize<CallMessage>(logRecord.Message, opt
 ## Q1.3
 - 有使用
 ### Q1.3.b
-- 主要使用了Copilot的自动补全，相比我自己写更省时间，减少了排错成本
+- 主要使用了Copilot的自动补全，相比我自己写更省时间，减少了排错成本，经测试核查无误
 - 也让ai解释了一些语句的含义、函数的用法
