@@ -54,7 +54,7 @@
     {
         public override TResult Accept<TResult>(ILogEntryVisitor<TResult> visitor)
         {
-           return visitor.Visit(this);
+            return visitor.Visit(this);
         }
     }
 
@@ -69,6 +69,7 @@
     {
         public override TResult Accept<TResult>(ILogEntryVisitor<TResult> visitor)
         {
+            return visitor.Visit(this);
             return visitor.Visit(this);
         }
     }
