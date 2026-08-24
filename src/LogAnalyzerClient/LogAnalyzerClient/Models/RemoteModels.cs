@@ -11,7 +11,8 @@ namespace LogAnalyzerClient.Models
 
     public sealed record LogFields(int Index, IReadOnlyList<LogFieldItem> Fields, string? ErrorMessage)
     {
-        public string Summary => "TODO: T4.1";
+        public string Summary => ErrorMessage ??
+            $"{Index} | {string.Join(", ", Fields.Select(item => $"{item.Key}: {item.Value}"))}";
     }
 
     public sealed record LogFieldItem(string Key, string Value);
