@@ -223,7 +223,79 @@ namespace LogAnalyzerClient.ViewModels
         [RelayCommand]
         private async Task GetAnalysisResultAsync()
         {
-            throw new NotImplementedException("TODO: T4.1");
+            await WithClientNotNull(async () =>
+            {
+                if (SelectedLogFile is null)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        "Please select a log file.");
+                    return;
+                }
+
+                ResultEntries.Clear();
+                using var call = _client!.GetAnalysisResult(new GetAnalysisResultRequest
+                {
+                    FileName = SelectedLogFile.FileName,
+                });
+
+                var receivedResponse = false;
+                var entryIndex = 0;
+                var dumper = new KeyValueVisitor();
+                await foreach (var response in call.ResponseStream.ReadAllAsync())
+                {
+                    receivedResponse = true;
+                    if (!response.Status.Success)
+                    {
+                        await DialogHelper.ShowMessageDialogAsync("Error",
+                            $"{response.Status.Code}: {response.Status.Message}");
+                        return;
+                    }
+
+                    switch (response.PayloadCase)
+                    {
+                        case GetAnalysisResultResponse.PayloadOneofCase.Header:
+                            switch (response.Header.State)
+                            {
+                                case AnalysisStateEnum.NotAnalyzed:
+                                    ResultEntries.Add(new LogFields(-1, [],
+                                        $"File {response.Header.FileName} has not been analyzed yet."));
+                                    break;
+                                case AnalysisStateEnum.Succeeded:
+                                    ResultEntries.Add(new LogFields(-1, [],
+                                        $"File: {response.Header.FileName}; Worker ID: {response.Header.WorkerId}"));
+                                    break;
+                                case AnalysisStateEnum.Failed:
+                                    var errorMessage = response.Header.HasErrorMessage
+                                        ? response.Header.ErrorMessage
+                                        : "Unknown error.";
+                                    ResultEntries.Add(new LogFields(-1, [],
+                                        $"Analysis failed: {errorMessage}"));
+                                    break;
+                                default:
+                                    throw new ClientInternalException(
+                                        $"Unknown analysis state: {response.Header.State}.");
+                            }
+                            break;
+                        case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
+                            var entry = GrpcTypeConverter.ConvertFromGrpc(response.LogEntry);
+                            var fields = dumper.Dump(entry)
+                                .Select(pair => new LogFieldItem(pair.Key, pair.Value))
+                                .ToList();
+                            ResultEntries.Add(new LogFields(entryIndex, fields, null));
+                            entryIndex++;
+                            break;
+                        default:
+                            throw new ClientInternalException(
+                                "The agent returned an invalid analysis result.");
+                    }
+                }
+
+                if (!receivedResponse)
+                {
+                    throw new ClientInternalException(
+                        "The agent returned no analysis result.");
+                }
+            });
         }
 
         [RelayCommand]
