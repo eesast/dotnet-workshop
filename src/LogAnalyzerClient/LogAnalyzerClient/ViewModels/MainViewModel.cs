@@ -148,7 +148,36 @@ namespace LogAnalyzerClient.ViewModels
         [RelayCommand]
         private async Task AnalyzeSelectedFilesAsync()
         {
-            throw new NotImplementedException("TODO: T4.1");
+            await WithClientNotNull(async () =>
+            {
+                if (!int.TryParse(DegreeOfParallelismText, out var degreeOfParallelism) ||
+                    degreeOfParallelism < 0)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        "Degree of parallelism must be a non-negative integer.");
+                    return;
+                }
+
+                if (SelectedFiles.Count == 0)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        "Please select at least one log file.");
+                    return;
+                }
+
+                var request = new AnalyzeFilesRequest
+                {
+                    DegreeOfParallelism = degreeOfParallelism,
+                };
+                request.FileNames.AddRange(SelectedFiles);
+
+                var response = await _client!.AnalyzeFilesAsync(request);
+                if (!response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        $"{response.Status.Code}: {response.Status.Message}");
+                }
+            });
         }
 
         /*
