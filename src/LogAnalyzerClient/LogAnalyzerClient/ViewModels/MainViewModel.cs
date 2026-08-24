@@ -132,7 +132,16 @@ namespace LogAnalyzerClient.ViewModels
         {
             await WithClientNotNull(async () =>
             {
-                throw new NotImplementedException("TODO: T4.1");
+                var response = await _client!.GetLogFilesAsync(new Empty());
+                if (!response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        $"{response.Status.Code}: {response.Status.Message}");
+                    return;
+                }
+
+                LogFiles = new ObservableCollection<LogFileItem>(
+                    response.FileNames.Select(fileName => new LogFileItem(fileName)));
             });
         }
 
