@@ -180,10 +180,32 @@ namespace LogAnalyzerClient.ViewModels
             });
         }
 
-        /*
-         * TODO: T4.1
-         * Add AnalyzeAllAsync ReplayCommand
-         */
+        [RelayCommand]
+        private async Task AnalyzeAllAsync()
+        {
+            await WithClientNotNull(async () =>
+            {
+                if (!int.TryParse(DegreeOfParallelismText, out var degreeOfParallelism) ||
+                    degreeOfParallelism < 0)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        "Degree of parallelism must be a non-negative integer.");
+                    return;
+                }
+
+                var request = new AnalyzeAllRequest
+                {
+                    DegreeOfParallelism = degreeOfParallelism,
+                };
+
+                var response = await _client!.AnalyzeAllAsync(request);
+                if (!response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        $"{response.Status.Code}: {response.Status.Message}");
+                }
+            });
+        }
 
         [RelayCommand]
         private async Task AnalyzeRightClickedFileAsync()
