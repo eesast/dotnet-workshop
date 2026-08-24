@@ -1,4 +1,5 @@
-﻿using LogAnalyzer;
+﻿using Google.Protobuf.WellKnownTypes;
+using LogAnalyzer;
 using LogParser.Visitors;
 
 namespace LocalCli
@@ -112,22 +113,72 @@ namespace LocalCli
 
         private static void ShowLogFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            foreach (var fileName in analyzer.GetLogFiles())
+            {
+                Console.WriteLine(fileName);
+            }
         }
 
         private static void AnalyzeFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Please input file names separated by commas:");
+            var input = Console.ReadLine();
+            if (input is null)
+                return;
+            var fileNames = input.Split(',').Select(name => name.Trim());
+            Console.WriteLine("Please input degree of parallelism:");
+            try
+            {
+                analyzer.AnalyzeFiles(int.Parse(Console.ReadLine() ?? string.Empty), fileNames);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Analyze failed: {ex.Message}");
+            }
         }
 
         private static void AnalyzeAll(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Please input degree of parallelism:");
+            try
+            {
+                analyzer.AnalyzeAll(int.Parse(Console.ReadLine() ?? string.Empty));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Analyze failed:  {ex.Message}");
+            }
         }
 
         private static void GetAnalysisResult(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Please input file name:");
+            var fileName = Console.ReadLine();
+            if (fileName is null)
+                return;
+            if(!analyzer.TryGetAnalysisResult(fileName, out var result) || result is null)
+            {
+                Console.WriteLine("File does not exist.");
+                return;
+            }
+            switch (result.State)
+            {
+                case AnalysisState.NotAnalyzed:
+                    Console.WriteLine("This file has not been analyzed yet.");
+                    break;
+                case AnalysisState.Succeeded:
+                    var visitor = new KeyValueVisitor();
+                    foreach (var entry in result.Entries)
+                    {
+                        var fields = visitor.Dump(entry);
+                        Console.WriteLine(string.Join(", ",fields.Select(
+                            field => $"{field.Key}={field.Value}")));
+                    }
+                    break;
+                case AnalysisState.Failed:
+                    Console.WriteLine($"Analysis failed: {result.ErrorMessage}");
+                    break;
+            }
         }
     }
 }
