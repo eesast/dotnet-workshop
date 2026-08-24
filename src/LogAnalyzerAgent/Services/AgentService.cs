@@ -29,27 +29,31 @@ namespace LogAnalyzerAgent.Services
 
         public override Task<ChangeDirectoryResponse> ChangeDirectory(ChangeDirectoryRequest request, ServerCallContext context)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            return _session.ChangeDirectory(request, context.CancellationToken);
         }
 
         public override Task<GetLogFilesResponse> GetLogFiles(Empty empty, ServerCallContext context)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            return _session.GetLogFiles(empty, context.CancellationToken);
         }
 
         public override Task<AnalyzeAllResponse> AnalyzeAll(AnalyzeAllRequest request, ServerCallContext context)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            return _session.AnalyzeAll(request, context.CancellationToken);
         }
 
         public override Task<AnalyzeFilesResponse> AnalyzeFiles(AnalyzeFilesRequest request, ServerCallContext context)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            return _session.AnalyzeFiles(request, context.CancellationToken);
         }
 
         public override async Task GetAnalysisResult(GetAnalysisResultRequest request, IServerStreamWriter<GetAnalysisResultResponse> responseStream, ServerCallContext context)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var responses = _session.GetAnalysisResult(request, context.CancellationToken);
+            foreach (var response in responses) // 替换掉原来的 await foreach
+            {
+                await responseStream.WriteAsync(response, context.CancellationToken);
+            }
         }
     }
 }
