@@ -24,7 +24,7 @@ namespace LogAnalyzerAgent.Applications
             {
                 Success = false,
                 Code = AgentErrorCode.InternalError,
-                Message = $"An error occurred while retrieving agent status: {ex.Message}",
+                Message = $"An internal agent error occurred: {ex.Message}",
             };
         }
 
