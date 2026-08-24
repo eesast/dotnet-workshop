@@ -20,17 +20,55 @@ namespace LogAnalyzer
 
         public void Enqueue(T item)
         {
-            throw new NotImplementedException("TODO: T2.1");
+            lock (_items)
+            {
+                _isCompleted = false;
+                if (item == null)
+                    throw new ArgumentNullException(nameof(item));
+                _items.Enqueue(item);
+            }
         }
 
         public bool TryDequeue([NotNullWhen(true)] out T? item)
         {
-            throw new NotImplementedException("TODO: T2.1");
+            lock (_items)
+            {
+                if (_items.Count > 0)
+                {
+                    item = _items.Dequeue();
+                    if (item != null)
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    while (!_isCompleted)
+                    {
+                        Monitor.Wait(_items);
+                    }
+                    if (_items.Count > 0)
+                    {
+                        item = _items.Dequeue();
+                        if (item != null)
+                        {
+                            return true;
+                        }
+                    }
+                }
+                item = default;
+                return false;
+            }
+
         }
 
         public void CompleteAdding()
         {
-            throw new NotImplementedException("TODO: T2.1");
+            lock (_items)
+            {
+                _isCompleted = true;
+                Monitor.PulseAll(_items);
+            }
         }
     }
 }

@@ -36,7 +36,7 @@ namespace LogAnalyzerClient.ViewModels
         private string _degreeOfParallelismText = "1";
 
         [ObservableProperty]
-        private string _currentAddress = "";
+        private string _currentAddress = "http://localhost:5000";
         private static class ConnectStatusString
         {
             public const string NOT_CONNECTED = "Not connected.";
@@ -108,22 +108,54 @@ namespace LogAnalyzerClient.ViewModels
             }
         }
 
+        private async Task<int?> ReadDegreeOfParallelismAsync()
+        {
+            if (!int.TryParse(DegreeOfParallelismText, out var degreeOfParallelism) || degreeOfParallelism < 0)
+            {
+                await DialogHelper.ShowMessageDialogAsync("Error", "Degree of parallelism must be a non-negative integer.");
+                return null;
+            }
+
+            return degreeOfParallelism;
+        }
+
+        private async Task<bool> EnsureSuccessAsync(OperationStatusMessage status)
+        {
+            if (status.Success)
+            {
+                return true;
+            }
+
+            await DialogHelper.ShowMessageDialogAsync(
+                "Error",
+                $"{status.Code}: {status.Message}");
+            return false;
+        }
+
         [RelayCommand]
         private async Task ChangeDirectoryAsync()
         {
-            await WithClientNotNull(async() =>
+            await WithClientNotNull(async () =>
             {
                 var request = new ChangeDirectoryRequest()
                 {
                     DirectoryPath = DirectoryPath,
                 };
                 var response = await _client!.ChangeDirectoryAsync(request);
-                if (!response.Status.Success)
+                if (!await EnsureSuccessAsync(response.Status))
                 {
-                    await DialogHelper.ShowMessageDialogAsync("Error",
-                        $"{response.Status.Code}: {response.Status.Message}");
+                    return;
                 }
-                await RefreshAsync();
+
+                DirectoryPath = response.CurrentDirectory;
+                SelectedLogFile = null;
+                SelectedFiles = Array.Empty<string>();
+                ResultEntries.Clear();
+                LogFiles.Clear();
+                foreach (var fileName in response.FileNames)
+                {
+                    LogFiles.Add(new LogFileItem(fileName));
+                }
             });
         }
 
@@ -132,31 +164,160 @@ namespace LogAnalyzerClient.ViewModels
         {
             await WithClientNotNull(async () =>
             {
-                throw new NotImplementedException("TODO: T4.1");
+                var response = await _client!.GetLogFilesAsync(new Empty());
+                if (!await EnsureSuccessAsync(response.Status))
+                {
+                    return;
+                }
+
+                LogFiles.Clear();
+                SelectedLogFile = null;
+                SelectedFiles = Array.Empty<string>();
+                ResultEntries.Clear();
+                foreach (var fileName in response.FileNames)
+                {
+                    LogFiles.Add(new LogFileItem(fileName));
+                }
             });
         }
 
         [RelayCommand]
         private async Task AnalyzeSelectedFilesAsync()
         {
-            throw new NotImplementedException("TODO: T4.1");
+            await WithClientNotNull(async () =>
+            {
+                if (SelectedFiles.Count == 0)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "Please select at least one log file.");
+                    return;
+                }
+
+                var degreeOfParallelism = await ReadDegreeOfParallelismAsync();
+                if (degreeOfParallelism is null)
+                {
+                    return;
+                }
+
+                var response = await _client!.AnalyzeFilesAsync(new AnalyzeFilesRequest
+                {
+                    DegreeOfParallelism = degreeOfParallelism.Value,
+                    FileNames = { SelectedFiles },
+                });
+                await EnsureSuccessAsync(response.Status);
+            });
         }
 
-        /*
-         * TODO: T4.1
-         * Add AnalyzeAllAsync ReplayCommand
-         */
+        [RelayCommand]
+        private async Task AnalyzeAllAsync()
+        {
+            await WithClientNotNull(async () =>
+            {
+                var degreeOfParallelism = await ReadDegreeOfParallelismAsync();
+                if (degreeOfParallelism is null)
+                {
+                    return;
+                }
+
+                var response = await _client!.AnalyzeAllAsync(new AnalyzeAllRequest
+                {
+                    DegreeOfParallelism = degreeOfParallelism.Value,
+                });
+                await EnsureSuccessAsync(response.Status);
+            });
+        }
 
         [RelayCommand]
         private async Task AnalyzeRightClickedFileAsync()
         {
-            throw new NotImplementedException("TODO: T4.1");
+            await WithClientNotNull(async () =>
+            {
+                if (SelectedLogFile is null)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "No log file selected.");
+                    return;
+                }
+
+                var degreeOfParallelism = await ReadDegreeOfParallelismAsync();
+                if (degreeOfParallelism is null)
+                {
+                    return;
+                }
+
+                var response = await _client!.AnalyzeFilesAsync(new AnalyzeFilesRequest
+                {
+                    DegreeOfParallelism = degreeOfParallelism.Value,
+                    FileNames = { SelectedLogFile.FileName },
+                });
+                await EnsureSuccessAsync(response.Status);
+            });
         }
 
         [RelayCommand]
         private async Task GetAnalysisResultAsync()
         {
-            throw new NotImplementedException("TODO: T4.1");
+            await WithClientNotNull(async () =>
+            {
+                var request = new GetAnalysisResultRequest()
+                {
+                    FileName = SelectedLogFile?.FileName ?? string.Empty,
+                };
+                if (string.IsNullOrWhiteSpace(request.FileName))
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "Please select a log file.");
+                    return;
+                }
+
+                using var call = _client!.GetAnalysisResult(request, cancellationToken: default);
+                ResultEntries.Clear();
+                int idx = 1;
+                await foreach (var response in call.ResponseStream.ReadAllAsync())
+                {
+                    if (!response.Status.Success)
+                    {
+                        ResultEntries.Add(new LogFields(idx++, new List<LogFieldItem>
+                        {
+                            new("Type", "Error"),
+                            new("Code", response.Status.Code.ToString()),
+                            new("Message", response.Status.Message),
+                        }, response.Status.Message));
+                        continue;
+                    }
+
+                    switch (response.PayloadCase)
+                    {
+                        case GetAnalysisResultResponse.PayloadOneofCase.Header:
+                            ResultEntries.Add(new LogFields(idx++, new List<LogFieldItem>
+                            {
+                                new("Type", "Header"),
+                                new("FileName", response.Header.FileName),
+                                new("FullName", response.Header.FullName),
+                                new("State", response.Header.State.ToString()),
+                                new("ErrorMessage", response.Header.ErrorMessage ?? string.Empty),
+                                new("WorkerId", response.Header.WorkerId.ToString()),
+                            }, response.Header.ErrorMessage));
+                            break;
+                        case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
+                            var entry = GrpcTypeConverter.ConvertFromGrpc(response.LogEntry);
+                            var fields = new KeyValueVisitor().Dump(entry)
+                                .Select(pair => new LogFieldItem(pair.Key, pair.Value))
+                                .Prepend(new LogFieldItem("Type", "LogEntry"))
+                                .ToList();
+                            ResultEntries.Add(new LogFields(idx++, fields, null));
+                            break;
+                        default:
+                            ResultEntries.Add(new LogFields(
+                                idx++,
+                                new List<LogFieldItem>
+                                {
+                                    new("Type", "Error"),
+                                    new("Message", "The agent returned an empty response."),
+                                },
+                                "The agent returned an empty response."));
+                            break;
+                    }
+                }
+            }
+            );
         }
 
         [RelayCommand]

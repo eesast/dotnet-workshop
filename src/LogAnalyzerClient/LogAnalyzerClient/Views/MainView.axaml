@@ -1,15 +1,15 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                xmlns:vm="using:LogAnalyzerClient.ViewModels"
-                xmlns:models="using:LogAnalyzerClient.Models"
-                mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-                x:Class="LogAnalyzerClient.Views.MainView"
-                x:DataType="vm:MainViewModel">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LogAnalyzerClient.ViewModels"
+             xmlns:models="using:LogAnalyzerClient.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="LogAnalyzerClient.Views.MainView"
+             x:DataType="vm:MainViewModel">
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
-to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
 
@@ -49,7 +49,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 Grid.Row="0"
                 Grid.Column="0"
                 Spacing="4"
-            >
+                >
                 <TextBlock Classes="TitleText" Text="LogAnalyzerClient" />
                 <TextBlock Classes="SubtleText" Text="GUI remote client of LogAnalyzer." />
             </StackPanel>
@@ -58,7 +58,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 Grid.Row="1"
                 Grid.Column="0"
                 Classes="Card"
-            >
+                >
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="5" RowSpacing="5">
                     <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Directory Path" />
                     <TextBox Grid.Row="0" Grid.Column="1"
@@ -79,7 +79,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                         <StackPanel DockPanel.Dock="Top" Spacing="8">
                             <TextBlock Classes="SectionTitle" Text="Log Files" />
                             <TextBlock Classes="SubtleText" Text="Supports multiple selection (hold Ctrl). Right-click to view analysis results for the currently selected files." TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                 <TextBlock Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Center" Text="DoP" />
                                 <TextBox Name="DegreeTextBox"
                                          Grid.Column="1"
@@ -90,6 +90,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                 <Button Grid.Column="3" Content="Selected" Command="{Binding AnalyzeSelectedFilesCommand}" />
                                 <!-- TODO: T4.1 -->
                                 <!-- Add "All" button -->
+                                <Button Grid.Column="4" Content="All" Command="{Binding AnalyzeAllCommand}" />
                             </Grid>
                         </StackPanel>
 
@@ -128,11 +129,11 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                    TextWrapping="Wrap" />
 
                         <ListBox Name="ResultEntryListBox"
-                                Grid.Row="2"
-                                ItemsSource="{Binding ResultEntries, Mode=OneWay}">
+                                 Grid.Row="2"
+                                 ItemsSource="{Binding ResultEntries, Mode=OneWay}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
+                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="Wrap" />
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
