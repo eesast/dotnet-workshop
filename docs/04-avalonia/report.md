@@ -2,17 +2,12 @@
 
 ## 实现的功能
 
-本次任务完成了 `LogAnalyzerClient` 中所有标记为 `TODO: T4.1` 的功能：
+本次我 `LogAnalyzerClient` 中所有 `TODO: T4.1` 的功能：
 
 1. **刷新日志文件列表**：`RefreshAsync` 异步调用 `GetLogFiles` RPC，并使用返回的文件名更新 `LogFiles`。如果 Agent 返回失败状态，则通过消息框提示错误。
-2. **分析选中的多个文件**：`AnalyzeSelectedFilesAsync` 将 `SelectedFiles` 传入 `AnalyzeFiles` RPC，支持通过 Ctrl 键多选文件。在请求前会校验并行度是否为非负整数，并检查是否至少选择了一个文件。
-3. **分析全部文件**：在界面中新增 `All` 按钮并绑定 `AnalyzeAllCommand`。`AnalyzeAllAsync` 会校验并行度，然后异步调用 `AnalyzeAll` RPC。
-4. **分析右键选中的文件**：`AnalyzeRightClickedFileAsync` 使用 `SelectedLogFile` 调用 `AnalyzeFiles` RPC，从而实现右键菜单中的单文件分析功能。
-5. **查看分析结果**：`GetAnalysisResultAsync` 异步读取 `GetAnalysisResult` 的服务端流，分别处理分析成功、分析失败和尚未分析等状态，并将每条日志转换为键值字段后写入 `ResultEntries`。
-6. **格式化结果显示**：`LogFields.Summary` 会将结果格式化为“序号 | 字段名: 字段值”的形式；文件信息、失败原因和尚未分析提示则作为独立消息显示。
-7. **异常与非法输入处理**：所有新增的 RPC 操作均通过统一的客户端检查和异常处理执行。未连接 Agent、RPC 失败、非法并行度、未选择文件及异常响应均通过消息框告知用户，避免 GUI 程序崩溃。
-
-所有 gRPC 请求均采用异步调用并进行 `await`，避免阻塞 Avalonia UI 线程。
+2. **分析选中的多个文件**：`AnalyzeSelectedFilesAsync` 将 `SelectedFiles` 传入 `AnalyzeFiles` RPC
+3. **目前支持分析全部文件**
+4. **查看分析结果**，可以通过右键查看结果
 
 ## 功能截图
 
@@ -59,3 +54,11 @@
 当目标地址或端口没有 Agent 监听时，连接异常会被捕获，并通过消息框显示连接失败信息，程序不会崩溃。
 
 ![Agent 不可用测试](./assets/image-wrongport.png)
+
+## Q4.1
+
+区别主要在于：GUI应用程序中，采用了MVVM的架构，分离了前端，后端与其中的传输处理，但是这也带来了清晰的好处：能够分别在model,view,veiwmodel中处理后端，前端与传输，所以相比于之前的开发，我认为主要的难点与复杂点是吧MVVM架构学习明白。
+
+## Q4.2
+我使用了AI，提示词：详细地讲解MVVM架构，并具体地讲解这个项目中是如何使用这一架构的
+此外，我还询问了几处报错（都是因为接口使用错误导致的），并进行了修复。
