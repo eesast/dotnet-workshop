@@ -116,32 +116,100 @@ namespace RemoteCli
 
         private static async Task ShowLogFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var response = await client.GetLogFilesAsync(new Empty());
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                return;
+            }
+            foreach (var fileName in response.FileNames)
+            {
+                Console.WriteLine(fileName);
+            }
         }
 
         private static int ReadDegreeOfParallelism()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            while (true)
+            {
+                Console.Write("Degree of paralleelism (0 = processor count): ");
+                if (int.TryParse(Console.ReadLine(), out var degree) && degree>=0)
+                    return degree;
+                Console.WriteLine("Please enter a non-negative integer.");
+            }
         }
 
         private static List<string> ReadFileNames()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            while (true)
+            {
+                Console.Write("File names, separated by commas: ");
+                var input = Console.ReadLine();
+                if (input is null) return [];
+                var names = input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Distinct().ToList();
+                if (names.Count > 0) return names;
+                Console.WriteLine("Please enter at least one file name.");
+            }
         }
 
         private static async Task AnalyzeFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var request = new AnalyzeFilesRequest
+            {
+                DegreeOfParallelism = ReadDegreeOfParallelism()
+            };
+            request.FileNames.AddRange(ReadFileNames());
+            var response = await client.AnalyzeFilesAsync(request);
+            Console.WriteLine(response.Status.Success? "Analysis completed.": $"Error: {response.Status.Code}: {response.Status.Message}");
         }
 
         private static async Task AnalyzeAll(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var response = await client.AnalyzeAllAsync(new AnalyzeAllRequest
+            {
+                DegreeOfParallelism = ReadDegreeOfParallelism()
+            });
+            Console.WriteLine(response.Status.Success? "Analysis completed.": $"Error: {response.Status.Code}: {response.Status.Message}");
         }
 
         private static async Task GetAnalysisResult(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.Write("File name: ");
+            var fileName = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                Console.WriteLine("File name connot be empty.");
+                return;
+            }
+            using var call = client.GetAnalysisResult(new GetAnalysisResultRequest {FileName = fileName});
+            await foreach (var response in call.ResponseStream.ReadAllAsync())
+            {
+                if (!response.Status.Success)
+                {
+                    Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                    return;
+                }
+                switch (response.PayloadCase)
+                {
+                    case GetAnalysisResultResponse.PayloadOneofCase.Header:
+                        var header = response.Header;
+                        Console.WriteLine($"File: {header.FileName}");
+                        Console.WriteLine($"Path: {header.FullName}");
+                        Console.WriteLine($"State: {header.State}, worker: {header.WorkerId}");
+                        if (header.HasErrorMessage)
+                            Console.WriteLine($"Error message: {header.ErrorMessage}");
+                        break;
+                    case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
+                        var entry = GrpcTypeConverter.ConvertFromGrpc(response.LogEntry);
+                        foreach (var pair in new KeyValueVisitor().Dump(entry))
+                            Console.WriteLine($"{pair.Key}: {pair.Value}");
+                        Console.WriteLine();
+                        break;
+                    default:
+                        Console.WriteLine("Received a response without payload.");
+                        break;
+                }
+            }
         }
     }
 }

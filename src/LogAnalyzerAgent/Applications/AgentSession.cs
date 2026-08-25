@@ -79,22 +79,176 @@ namespace LogAnalyzerAgent.Applications
 
         public Task<ChangeDirectoryResponse> ChangeDirectory(ChangeDirectoryRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new ChangeDirectoryResponse();
+            try
+            {
+                if (!_analyzer.ChangeDirectory(request.DirectoryPath))
+                {
+                    response.Status = _analyzer.IsAnalyzing
+                        ? new OperationStatusMessage
+                        {
+                            Success = false, Code = AgentErrorCode.InvalidOperation,
+                            Message = "Analysis is in progress."
+                        }
+                        : new OperationStatusMessage
+                        {
+                            Success = false, Code = AgentErrorCode.DirectoryNotFound,
+                            Message = $"Directory '{request.DirectoryPath}' does not exist."
+                        };
+                    return Task.FromResult(response);    
+                }
+                response.CurrentDirectory = _analyzer.CurrentDirectory ?? "";
+                response.FileNames.AddRange(_analyzer.GetLogFiles());
+                response.Status = CreateNoErrorOperationStatus();
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(ex);
+                _logger.LogError(ex, "Unable to change directory to {Directory}.",request.DirectoryPath);
+            }
+            return Task.FromResult(response);
         }
 
         public Task<AnalyzeAllResponse> AnalyzeAll(AnalyzeAllRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new AnalyzeAllResponse();
+            try
+            {
+                if (!_analyzer.HasDirectory)
+                {
+                    response.Status = new OperationStatusMessage
+                    {
+                        Success = false, Code = AgentErrorCode.InvalidOperation,
+                        Message = "Please select a log directory first."
+                    };
+                }
+                else
+                {
+                    _analyzer.AnalyzeAll(request.DegreeOfParallelism);
+                    response.Status = CreateNoErrorOperationStatus();
+                }
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                response.Status = new OperationStatusMessage
+                {
+                    Success = false, Code = AgentErrorCode.InvalidArgument, Message=ex.Message
+                };
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Status = new OperationStatusMessage
+                {
+                    Success = false, Code = AgentErrorCode.InvalidOperation, Message=ex.Message
+                };
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(ex);
+                _logger.LogError(ex, "Unable to analyze all files.");
+            }
+            return Task.FromResult(response);
         }
 
         public Task<AnalyzeFilesResponse> AnalyzeFiles(AnalyzeFilesRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new AnalyzeFilesResponse();
+            try
+            {
+                if (!_analyzer.HasDirectory)
+                {
+                    response.Status = new OperationStatusMessage
+                    {
+                        Success = false, Code = AgentErrorCode.InvalidOperation,
+                        Message = "Please select a log directory first."
+                    };
+                }
+                else
+                {
+                    _analyzer.AnalyzeFiles(request.DegreeOfParallelism, request.FileNames);
+                    response.Status = CreateNoErrorOperationStatus();
+                }
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                response.Status = new OperationStatusMessage
+                {
+                    Success = false, Code = AgentErrorCode.InvalidArgument, Message=ex.Message
+                };
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Status = new OperationStatusMessage
+                {
+                    Success = false, Code = AgentErrorCode.InvalidOperation, Message=ex.Message
+                };
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(ex);
+                _logger.LogError(ex, "Unable to analyze specified files.");
+            }
+            return Task.FromResult(response);
         }
 
         public IReadOnlyList<GetAnalysisResultResponse> GetAnalysisResult(GetAnalysisResultRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            try
+            {
+                if (!_analyzer.TryGetAnalysisResult(request.FileName, out var result) || result is null)
+                {
+                    return new[]
+                    {
+                        new GetAnalysisResultResponse
+                        {
+                            Status = new OperationStatusMessage
+                            {
+                                Success = false, Code = AgentErrorCode.FileNotFound,
+                                Message = $"File '{request.FileName}' does not exist."
+                            }
+                        }
+                    };
+                }
+                var responses = new List<GetAnalysisResultResponse>
+                {
+                    new()
+                    {
+                        Status = CreateNoErrorOperationStatus(),
+                        Header = new AnalysisResultHeaderMessage
+                        {
+                            FileName = result.FileName,
+                            FullName = result.FullName,
+                            State = GrpcTypeConverter.ConvertToGrpc(result.State),
+                            WorkerId = result.WorkerId
+                        }
+                    }
+                };
+                if (result.ErrorMessage is not null)
+                {
+                    responses[0].Header.ErrorMessage = result.ErrorMessage;
+                }
+                if (result.State == AnalysisState.Succeeded)
+                {
+                    responses.AddRange(result.Entries.Select(entry =>
+                        new GetAnalysisResultResponse
+                        {
+                            Status = CreateNoErrorOperationStatus(),
+                            LogEntry = GrpcTypeConverter.ConvertToGrpc(entry)
+                        }));
+                }
+                return responses;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unable to retrieve analysis result for {FileName}",request.FileName);
+                return new[]
+                {
+                    new GetAnalysisResultResponse
+                    {
+                        Status = CreateInternalErrorOperationStatus(ex)
+                    }
+                };
+            }
         }
     }
 }
