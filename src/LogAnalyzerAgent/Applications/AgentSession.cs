@@ -4,6 +4,7 @@ using LogAnalyzer;
 using LogAnalyzerRpc.Protos;
 using LogAnalyzerRpc;
 using LogParser.Visitors;
+using LogParser.Models;
 
 namespace LogAnalyzerAgent.Applications
 {
@@ -249,6 +250,66 @@ namespace LogAnalyzerAgent.Applications
                     }
                 };
             }
+        }
+        public IReadOnlyList<QueryLogEntriesResponse> QueryLogEntries(
+            QueryLogEntriesRequest request, CancellationToken cancellationToken)
+        {
+            static OperationStatusMessage Failure(AgentErrorCode code, string message) => new()
+            {
+                Success = false,
+                Code = code,
+                Message = message
+            };
+
+            if (!_analyzer.TryGetAnalysisResult(request.FileName, out var result) || result is null)
+            {
+                return [new QueryLogEntriesResponse
+                {
+                    Status = Failure(AgentErrorCode.FileNotFound,
+                        $"File '{request.FileName}' does not exist.")
+                }];
+            }
+
+            if (result.State != AnalysisState.Succeeded)
+            {
+                return [new QueryLogEntriesResponse
+                {
+                    Status = Failure(AgentErrorCode.InvalidOperation,
+                        $"File '{request.FileName}' has not been analyzed successfully.")
+                }];
+            }
+
+            IEnumerable<LogEntry> entries = result.Entries.Where(entry =>
+                (!request.HasEventType || GrpcTypeConverter.ConvertToGrpc(entry.EventType) == request.EventType) &&
+                (!request.HasSeverity || GrpcTypeConverter.ConvertToGrpc(entry.Severity) == request.Severity) &&
+                (string.IsNullOrWhiteSpace(request.PodName) || entry.PodName == request.PodName) &&
+                (string.IsNullOrWhiteSpace(request.RequestId) || entry switch
+                {
+                    CallLogEntry call => call.RequestId == request.RequestId,
+                    RequestLogEntry requestEntry => requestEntry.RequestId == request.RequestId,
+                    _ => false
+                }) &&
+                (request.StartTime is null || entry.Timestamp >= request.StartTime.ToDateTimeOffset()) &&
+                (request.EndTime is null || entry.Timestamp <= request.EndTime.ToDateTimeOffset()));
+
+            entries = request.SortKey switch
+            {
+                LogSortKey.Severity => entries.OrderBy(entry => entry.Severity),
+                LogSortKey.RequestId => entries.OrderBy(entry => entry switch
+                {
+                    CallLogEntry call => call.RequestId,
+                    RequestLogEntry requestEntry => requestEntry.RequestId,
+                    _ => string.Empty
+                }),
+                _ => entries.OrderBy(entry => entry.Timestamp)
+            };
+            if (request.Descending) entries = entries.Reverse();
+
+            return entries.Select(entry => new QueryLogEntriesResponse
+            {
+                Status = CreateNoErrorOperationStatus(),
+                LogEntry = GrpcTypeConverter.ConvertToGrpc(entry)
+            }).ToList();
         }
     }
 }

@@ -54,5 +54,16 @@ namespace LogAnalyzerAgent.Services
                 await responseStream.WriteAsync(response);
             }
         }
+
+        public override async Task QueryLogEntries(
+            QueryLogEntriesRequest request,
+            IServerStreamWriter<QueryLogEntriesResponse> responseStream,
+            ServerCallContext context)
+        {
+            foreach (var response in _session.QueryLogEntries(request, context.CancellationToken))
+            {
+                await responseStream.WriteAsync(response);
+            }
+        }
     }
 }
