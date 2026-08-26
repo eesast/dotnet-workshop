@@ -4,6 +4,7 @@
                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                 xmlns:vm="using:LogAnalyzerClient.ViewModels"
                 xmlns:models="using:LogAnalyzerClient.Models"
+                xmlns:controls="using:LogAnalyzerClient.Controls"
                 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
                 x:Class="LogAnalyzerClient.Views.MainView"
                 x:DataType="vm:MainViewModel">
@@ -226,6 +227,8 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                 <ContextMenu>
                                     <MenuItem Header="Analyze File(_A)" Command="{Binding AnalyzeRightClickedFileCommand}"/>
                                     <MenuItem Header="View Analysis Results(_V)" Command="{Binding GetAnalysisResultCommand}" />
+                                    <Separator />
+                                    <MenuItem Header="View Service Topology(_T)" Command="{Binding ShowServiceTopologyCommand}" />
                                 </ContextMenu>
                             </ListBox.ContextMenu>
                             <ListBox.ItemTemplate>
@@ -238,26 +241,64 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 </Border>
 
                 <Border Classes="Card results-card">
-                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
-                            <TextBlock Classes="SectionTitle" Text="Analysis Result" />
-                        </StackPanel>
+                    <TabControl SelectedIndex="{Binding SelectedResultTabIndex, Mode=TwoWay}">
+                        <TabItem Header="Analysis Result">
+                            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
+                                <TextBlock Grid.Row="0" Classes="SectionTitle" Text="Analysis Result" />
 
-                        <TextBlock Grid.Row="1"
-                                   Classes="SubtleText"
-                                   Text="Analysis results. Each line is a single log entry."
-                                   TextWrapping="Wrap" />
+                                <TextBlock Grid.Row="1"
+                                           Classes="SubtleText"
+                                           Text="Analysis results. Each line is a single log entry."
+                                           TextWrapping="Wrap" />
 
-                        <ListBox Name="ResultEntryListBox"
-                                Grid.Row="2"
-                                ItemsSource="{Binding ResultEntries, Mode=OneWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Grid>
+                                <ListBox Name="ResultEntryListBox"
+                                         Grid.Row="2"
+                                         ItemsSource="{Binding ResultEntries, Mode=OneWay}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:LogFields">
+                                            <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </TabItem>
+
+                        <TabItem Header="Service Topology">
+                            <Grid RowDefinitions="Auto,*,Auto,2*" RowSpacing="8">
+                                <StackPanel Grid.Row="0" Spacing="2">
+                                    <TextBlock Classes="SectionTitle" Text="Service Topology" />
+                                    <TextBlock Classes="SubtleText"
+                                               Text="Nodes are services; arrows are calls. Click an edge count to load its logs."
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <ScrollViewer Grid.Row="1"
+                                              MinHeight="220"
+                                              HorizontalScrollBarVisibility="Auto"
+                                              VerticalScrollBarVisibility="Auto">
+                                    <controls:TopologyGraphControl
+                                        Nodes="{Binding TopologyNodes, Mode=OneWay}"
+                                        Edges="{Binding TopologyEdges, Mode=OneWay}"
+                                        EdgeSelectedCommand="{Binding GetTopologyEdgeLogsCommand, Mode=OneWay}" />
+                                </ScrollViewer>
+
+                                <TextBlock Grid.Row="2"
+                                           Classes="SubtleText"
+                                           Text="{Binding TopologyStatus, Mode=OneWay}"
+                                           TextWrapping="Wrap" />
+
+                                <ListBox Grid.Row="3"
+                                         MinHeight="120"
+                                         ItemsSource="{Binding TopologyEdgeLogEntries, Mode=OneWay}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:LogFields">
+                                            <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </TabItem>
+                    </TabControl>
                 </Border>
             </Grid>
         </Grid>

@@ -24,7 +24,7 @@ namespace LogAnalyzerAgent.Applications
             {
                 Success = false,
                 Code = AgentErrorCode.InternalError,
-                Message = $"An error occurred while retrieving agent status: {ex.Message}",
+                Message = $"An internal error occurred: {ex.Message}",
             };
         }
 
@@ -36,6 +36,49 @@ namespace LogAnalyzerAgent.Applications
                 Code = AgentErrorCode.NoAgentError,
                 Message = "",
             };
+        }
+
+        private static OperationStatusMessage CreateErrorOperationStatus(
+            AgentErrorCode code,
+            string message)
+        {
+            return new OperationStatusMessage
+            {
+                Success = false,
+                Code = code,
+                Message = message,
+            };
+        }
+
+        private bool TryGetSucceededAnalysisResult(
+            string fileName,
+            out AnalysisResult? result,
+            out OperationStatusMessage status)
+        {
+            if (!_analyzer.TryGetAnalysisResult(fileName, out result) || result is null)
+            {
+                status = CreateErrorOperationStatus(
+                    AgentErrorCode.FileNotFound,
+                    $"File '{fileName}' was not found.");
+                return false;
+            }
+
+            if (result.State != AnalysisState.Succeeded)
+            {
+                var stateMessage = result.State switch
+                {
+                    AnalysisState.NotAnalyzed => "has not been analyzed yet",
+                    AnalysisState.Failed => $"failed to analyze: {result.ErrorMessage ?? "Unknown error."}",
+                    _ => $"has unsupported analysis state '{result.State}'",
+                };
+                status = CreateErrorOperationStatus(
+                    AgentErrorCode.InvalidOperation,
+                    $"File '{fileName}' {stateMessage}.");
+                return false;
+            }
+
+            status = CreateNoErrorOperationStatus();
+            return true;
         }
 
         public Task<Empty> Ping(Empty empty, CancellationToken cancellationToken)
@@ -191,6 +234,110 @@ namespace LogAnalyzerAgent.Applications
                 _logger.LogError(ex, "An error occurred while retrieving analysis result.");
             }
             return responses;
+        }
+
+        public Task<GetServiceTopologyResponse> GetServiceTopology(
+            GetServiceTopologyRequest request,
+            CancellationToken cancellationToken)
+        {
+            var response = new GetServiceTopologyResponse();
+            try
+            {
+                if (!TryGetSucceededAnalysisResult(request.FileName, out var result, out var status))
+                {
+                    response.Status = status;
+                    return Task.FromResult(response);
+                }
+
+                var topology = ServiceTopologyBuilder.Build(result!.Entries);
+                foreach (var node in topology.Nodes)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    response.Nodes.Add(new ServiceNodeMessage
+                    {
+                        Name = node.Name,
+                    });
+                }
+
+                foreach (var edge in topology.Edges)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    response.Edges.Add(new ServiceEdgeMessage
+                    {
+                        SourceService = edge.SourceService,
+                        TargetService = edge.TargetService,
+                        CallCount = edge.CallCount,
+                    });
+                }
+
+                response.Status = CreateNoErrorOperationStatus();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(ex);
+                _logger.LogError(ex, "An error occurred while retrieving service topology.");
+            }
+
+            return Task.FromResult(response);
+        }
+
+        public Task<GetTopologyEdgeLogsResponse> GetTopologyEdgeLogs(
+            GetTopologyEdgeLogsRequest request,
+            CancellationToken cancellationToken)
+        {
+            var response = new GetTopologyEdgeLogsResponse();
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.SourceService) ||
+                    string.IsNullOrWhiteSpace(request.TargetService))
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidArgument,
+                        "Source service and target service must not be empty.");
+                    return Task.FromResult(response);
+                }
+
+                if (!TryGetSucceededAnalysisResult(request.FileName, out var result, out var status))
+                {
+                    response.Status = status;
+                    return Task.FromResult(response);
+                }
+
+                var topology = ServiceTopologyBuilder.Build(result!.Entries);
+                var edge = topology.Edges.FirstOrDefault(candidate =>
+                    string.Equals(candidate.SourceService, request.SourceService, StringComparison.Ordinal) &&
+                    string.Equals(candidate.TargetService, request.TargetService, StringComparison.Ordinal));
+
+                if (edge is null)
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidArgument,
+                        $"Edge '{request.SourceService}' -> '{request.TargetService}' does not exist in file '{request.FileName}'.");
+                    return Task.FromResult(response);
+                }
+
+                foreach (var entry in edge.Calls)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    response.Entries.Add(GrpcTypeConverter.ConvertToGrpc(entry).CallLogEntry);
+                }
+                response.Status = CreateNoErrorOperationStatus();
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(ex);
+                _logger.LogError(ex, "An error occurred while retrieving topology edge logs.");
+            }
+
+            return Task.FromResult(response);
         }
     }
 }

@@ -57,5 +57,19 @@ namespace LogAnalyzerAgent.Services
                 await responseStream.WriteAsync(response);
             }
         }
+
+        public override Task<GetServiceTopologyResponse> GetServiceTopology(
+            GetServiceTopologyRequest request,
+            ServerCallContext context)
+        {
+            return _session.GetServiceTopology(request, context.CancellationToken);
+        }
+
+        public override Task<GetTopologyEdgeLogsResponse> GetTopologyEdgeLogs(
+            GetTopologyEdgeLogsRequest request,
+            ServerCallContext context)
+        {
+            return _session.GetTopologyEdgeLogs(request, context.CancellationToken);
+        }
     }
 }

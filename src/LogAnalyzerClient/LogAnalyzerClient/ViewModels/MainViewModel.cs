@@ -56,6 +56,24 @@ namespace LogAnalyzerClient.ViewModels
         [ObservableProperty]
         private ObservableCollection<LogFields> _resultEntries = new();
 
+        [ObservableProperty]
+        private ObservableCollection<TopologyNodeItem> _topologyNodes = new();
+
+        [ObservableProperty]
+        private ObservableCollection<TopologyEdgeItem> _topologyEdges = new();
+
+        [ObservableProperty]
+        private ObservableCollection<LogFields> _topologyEdgeLogEntries = new();
+
+        [ObservableProperty]
+        private TopologyEdgeItem? _selectedTopologyEdge = null;
+
+        [ObservableProperty]
+        private string _topologyStatus = "Select a log file and open its service topology.";
+
+        [ObservableProperty]
+        private int _selectedResultTabIndex = 0;
+
         [RelayCommand]
         private async Task ConnectAsync()
         {
@@ -254,6 +272,7 @@ namespace LogAnalyzerClient.ViewModels
                     return;
                 }
 
+                SelectedResultTabIndex = 0;
                 ResultEntries.Clear();
                 using var call = _client!.GetAnalysisResult(new GetAnalysisResultRequest
                 {
@@ -317,6 +336,93 @@ namespace LogAnalyzerClient.ViewModels
                     throw new ClientInternalException(
                         "The agent returned no analysis result.");
                 }
+            });
+        }
+
+        [RelayCommand]
+        private async Task ShowServiceTopologyAsync()
+        {
+            await WithClientNotNull(async () =>
+            {
+                if (SelectedLogFile is null)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        "Please select a log file.");
+                    return;
+                }
+
+                var response = await _client!.GetServiceTopologyAsync(
+                    new GetServiceTopologyRequest
+                    {
+                        FileName = SelectedLogFile.FileName,
+                    });
+                if (!response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        $"{response.Status.Code}: {response.Status.Message}");
+                    return;
+                }
+
+                var edges = response.Edges
+                    .Select(edge => new TopologyEdgeItem(
+                        edge.SourceService,
+                        edge.TargetService,
+                        edge.CallCount))
+                    .ToArray();
+                var nodes = TopologyLayout.Arrange(
+                    response.Nodes.Select(node => node.Name),
+                    edges);
+
+                TopologyEdges = new ObservableCollection<TopologyEdgeItem>(edges);
+                TopologyNodes = new ObservableCollection<TopologyNodeItem>(nodes);
+                TopologyEdgeLogEntries.Clear();
+                SelectedTopologyEdge = null;
+                TopologyStatus = edges.Length == 0
+                    ? $"No service calls were found in {SelectedLogFile.FileName}."
+                    : $"Topology for {SelectedLogFile.FileName}. Click an edge count to load its {edges.Sum(edge => edge.CallCount)} call logs.";
+                SelectedResultTabIndex = 1;
+            });
+        }
+
+        [RelayCommand]
+        private async Task GetTopologyEdgeLogsAsync(TopologyEdgeItem? edge)
+        {
+            await WithClientNotNull(async () =>
+            {
+                if (SelectedLogFile is null || edge is null)
+                {
+                    return;
+                }
+
+                var response = await _client!.GetTopologyEdgeLogsAsync(
+                    new GetTopologyEdgeLogsRequest
+                    {
+                        FileName = SelectedLogFile.FileName,
+                        SourceService = edge.SourceService,
+                        TargetService = edge.TargetService,
+                    });
+                if (!response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        $"{response.Status.Code}: {response.Status.Message}");
+                    return;
+                }
+
+                SelectedTopologyEdge = edge;
+                TopologyEdgeLogEntries.Clear();
+                var dumper = new KeyValueVisitor();
+                for (var index = 0; index < response.Entries.Count; index++)
+                {
+                    var entry = GrpcTypeConverter.ConvertFromGrpc(new LogEntryMessage
+                    {
+                        CallLogEntry = response.Entries[index],
+                    });
+                    var fields = dumper.Dump(entry)
+                        .Select(pair => new LogFieldItem(pair.Key, pair.Value))
+                        .ToList();
+                    TopologyEdgeLogEntries.Add(new LogFields(index, fields, null));
+                }
+                TopologyStatus = $"{edge.Summary}; loaded {response.Entries.Count} matching logs.";
             });
         }
 
