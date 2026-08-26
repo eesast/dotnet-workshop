@@ -1,7 +1,9 @@
 ﻿using CsvHelper;
 using CsvHelper.Configuration;
 using LogParser.Models;
+using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 
 namespace LogParser.Parser
 {
@@ -34,7 +36,7 @@ namespace LogParser.Parser
             };
             using var csv = new CsvReader(logFile, config);
             csv.Context.RegisterClassMap<LogRecordMap>();
-            
+
             foreach (var logRecord in csv.GetRecords<LogRecord>())
             {
                 yield return LineParser.ParseLine(logRecord);
