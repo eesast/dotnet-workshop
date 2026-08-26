@@ -4,7 +4,6 @@ using Grpc.Net.Client;
 using LogAnalyzerRpc;
 using LogAnalyzerRpc.Protos;
 using LogParser.Visitors;
-using Microsoft.Extensions.Logging;
 
 namespace RemoteCli
 {
@@ -116,32 +115,160 @@ namespace RemoteCli
 
         private static async Task ShowLogFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            try
+            {
+                var response = await client.GetLogFilesAsync(new Empty());
+                if (!PrintError(response.Status))
+                {
+                    return;
+                }
+
+                Console.WriteLine(response.FileNames.Count == 0 ? "No log files found." : "Log files:");
+                foreach (var fileName in response.FileNames)
+                {
+                    Console.WriteLine($"- {fileName}");
+                }
+            }
+            catch (RpcException ex)
+            {
+                Console.WriteLine($"RPC failed: {ex.Status.Detail}");
+            }
         }
 
         private static int ReadDegreeOfParallelism()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            while (true)
+            {
+                Console.WriteLine("Input degree of parallelism (0 = processor count):");
+                var input = Console.ReadLine();
+                if (input is null)
+                {
+                    return 0;
+                }
+                if (int.TryParse(input, out var value) && value >= 0)
+                {
+                    return value;
+                }
+                Console.WriteLine("Please input a non-negative integer.");
+            }
         }
 
         private static List<string> ReadFileNames()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.WriteLine("Input comma-separated log file names:");
+            return (Console.ReadLine() ?? "")
+                .Split(',')
+                .Select(fileName => fileName.Trim())
+                .Where(fileName => !string.IsNullOrEmpty(fileName))
+                .Distinct()
+                .ToList();
         }
 
         private static async Task AnalyzeFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var fileNames = ReadFileNames();
+            if (fileNames.Count == 0)
+            {
+                Console.WriteLine("No file name was provided.");
+                return;
+            }
+
+            var request = new AnalyzeFilesRequest
+            {
+                DegreeOfParallelism = ReadDegreeOfParallelism(),
+            };
+            request.FileNames.AddRange(fileNames);
+            try
+            {
+                var response = await client.AnalyzeFilesAsync(request);
+                if (PrintError(response.Status))
+                {
+                    Console.WriteLine("Analysis completed.");
+                }
+            }
+            catch (RpcException ex)
+            {
+                Console.WriteLine($"RPC failed: {ex.Status.Detail}");
+            }
         }
 
         private static async Task AnalyzeAll(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            try
+            {
+                var response = await client.AnalyzeAllAsync(new AnalyzeAllRequest
+                {
+                    DegreeOfParallelism = ReadDegreeOfParallelism(),
+                });
+                if (PrintError(response.Status))
+                {
+                    Console.WriteLine("Analysis completed.");
+                }
+            }
+            catch (RpcException ex)
+            {
+                Console.WriteLine($"RPC failed: {ex.Status.Detail}");
+            }
         }
 
         private static async Task GetAnalysisResult(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.WriteLine("Input a log file name:");
+            var fileName = Console.ReadLine()?.Trim();
+            if (string.IsNullOrEmpty(fileName))
+            {
+                Console.WriteLine("File name cannot be empty.");
+                return;
+            }
+
+            try
+            {
+                using var call = client.GetAnalysisResult(new GetAnalysisResultRequest { FileName = fileName });
+                AnalysisResultHeaderMessage? header = null;
+                var visitor = new KeyValueVisitor();
+                await foreach (var response in call.ResponseStream.ReadAllAsync())
+                {
+                    if (!PrintError(response.Status))
+                    {
+                        return;
+                    }
+
+                    switch (response.PayloadCase)
+                    {
+                        case GetAnalysisResultResponse.PayloadOneofCase.Header:
+                            header = response.Header;
+                            Console.WriteLine($"State: {header.State}");
+                            if (header.State == AnalysisStateEnum.Failed)
+                            {
+                                Console.WriteLine($"Analysis failed: {header.ErrorMessage}");
+                            }
+                            break;
+                        case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
+                            var entry = GrpcTypeConverter.ConvertFromGrpc(response.LogEntry);
+                            Console.WriteLine(string.Join(", ", visitor.Dump(entry).Select(pair => $"{pair.Key}={pair.Value}")));
+                            break;
+                    }
+                }
+
+                if (header is not null && header.State == AnalysisStateEnum.NotAnalyzed)
+                {
+                    Console.WriteLine($"Log file '{fileName}' has not been analyzed.");
+                }
+            }
+            catch (RpcException ex)
+            {
+                Console.WriteLine($"RPC failed: {ex.Status.Detail}");
+            }
+        }
+
+        private static bool PrintError(OperationStatusMessage status)
+        {
+            if (status.Success)
+            {
+                return true;
+            }
+            Console.WriteLine($"Error: {status.Code}: {status.Message}");
+            return false;
         }
     }
 }
