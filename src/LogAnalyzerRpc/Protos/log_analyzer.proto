@@ -15,6 +15,7 @@ service LogAnalyzerAgentService {
 	rpc AnalyzeAll(AnalyzeAllRequest) returns (AnalyzeAllResponse);
 	rpc AnalyzeFiles(AnalyzeFilesRequest) returns (AnalyzeFilesResponse);
 	rpc GetAnalysisResult(GetAnalysisResultRequest) returns (stream GetAnalysisResultResponse);
+	rpc QueryLogEntries(QueryLogEntriesRequest) returns (stream QueryLogEntriesResponse);
 }
 
 enum AgentErrorCode {
@@ -149,4 +150,27 @@ message GetAnalysisResultResponse {
 		LogEntryMessage log_entry = 2;
 	}
 	OperationStatusMessage status = 3;
+}
+
+enum LogSortKey {
+  LOG_SORT_KEY_TIMESTAMP = 0;
+  LOG_SORT_KEY_SEVERITY = 1;
+  LOG_SORT_KEY_REQUEST_ID = 2;
+}
+
+message QueryLogEntriesRequest {
+  string file_name = 1;
+  optional LogEventTypeEnum event_type = 2;
+  optional LogSeverityEnum severity = 3;
+  string pod_name = 4;
+  string request_id = 5;
+  optional google.protobuf.Timestamp start_time = 6;
+  optional google.protobuf.Timestamp end_time = 7;
+  LogSortKey sort_key = 8;
+  bool descending = 9;
+}
+
+message QueryLogEntriesResponse {
+  OperationStatusMessage status = 1;
+  LogEntryMessage log_entry = 2;
 }

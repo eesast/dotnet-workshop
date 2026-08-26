@@ -4,14 +4,21 @@
                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                 xmlns:vm="using:LogAnalyzerClient.ViewModels"
                 xmlns:models="using:LogAnalyzerClient.Models"
+                xmlns:controls="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.DataGrid"
+                xmlns:converters="using:LogAnalyzerClient.Converters"
                 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
                 x:Class="LogAnalyzerClient.Views.MainView"
                 x:DataType="vm:MainViewModel">
+                
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
 to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
+
+    <UserControl.Resources>
+        <converters:SeverityBrushConverter x:Key="SeverityBrushConverter" />
+    </UserControl.Resources>
 
     <DockPanel>
         <Menu DockPanel.Dock="Top">
@@ -79,7 +86,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                         <StackPanel DockPanel.Dock="Top" Spacing="8">
                             <TextBlock Classes="SectionTitle" Text="Log Files" />
                             <TextBlock Classes="SubtleText" Text="Supports multiple selection (hold Ctrl). Right-click to view analysis results for the currently selected files." TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="5">
                                 <TextBlock Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Center" Text="DoP" />
                                 <TextBox Name="DegreeTextBox"
                                          Grid.Column="1"
@@ -88,7 +95,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                          PlaceholderText="Degree of Parallelism" />
                                 <TextBlock Grid.Column="2" Margin="10,0,5,0" VerticalAlignment="Center" Text="Analyze" />
                                 <Button Grid.Column="3" Content="Selected" Command="{Binding AnalyzeSelectedFilesCommand}" />
-                                <!-- TODO: T4.1 -->
+                                <Button Grid.Column="4" Margin="5,0,0,0" Content="All" Command="{Binding AnalyzeAllCommand}" />
                                 <!-- Add "All" button -->
                             </Grid>
                         </StackPanel>
@@ -122,20 +129,53 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                             <TextBlock Classes="SectionTitle" Text="Analysis Result" />
                         </StackPanel>
 
-                        <TextBlock Grid.Row="1"
-                                   Classes="SubtleText"
-                                   Text="Analysis results. Each line is a single log entry."
-                                   TextWrapping="Wrap" />
+                        <StackPanel Grid.Row="1" Spacing="6">
+                            <Grid ColumnDefinitions="*,*,*,*,Auto,Auto,Auto">
+                                <TextBox Grid.Column="0" Watermark="Pod name"
+                                        Text="{Binding QueryPodName, Mode=TwoWay}" />
+                                <TextBox Grid.Column="1" Watermark="Request ID"
+                                        Text="{Binding QueryRequestId, Mode=TwoWay}" />
+                                <TextBox Grid.Column="2" Watermark="Info / Warning / Error"
+                                        Text="{Binding QuerySeverity, Mode=TwoWay}" />
+                                <TextBox Grid.Column="3" Watermark="Call / Request / Internal"
+                                        Text="{Binding QueryEventType, Mode=TwoWay}" />
+                                <ComboBox Grid.Column="4" ItemsSource="{Binding SortKeys}"
+                                        SelectedItem="{Binding SortKey, Mode=TwoWay}" />
+                                <CheckBox Grid.Column="5" Content="Descending"
+                                        IsChecked="{Binding SortDescending, Mode=TwoWay}" />
+                                <Button Grid.Column="6" Content="Query" Command="{Binding QueryCommand}" />
+                            </Grid>
+                            <Button Content="Export CSV" HorizontalAlignment="Right"
+                                    Command="{Binding ExportCsvCommand}" />
+                        </StackPanel>
 
-                        <ListBox Name="ResultEntryListBox"
-                                Grid.Row="2"
-                                ItemsSource="{Binding ResultEntries, Mode=OneWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                        <controls:DataGrid Grid.Row="2" ItemsSource="{Binding QueryRows}"
+                                            AutoGenerateColumns="False" IsReadOnly="True">
+                            <controls:DataGrid.Columns>
+                                <controls:DataGridTextColumn Header="Line" Binding="{Binding LineNo}" />
+                                <controls:DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp}" />
+                                <controls:DataGridTextColumn Header="Pod" Binding="{Binding PodName}" />
+                                <controls:DataGridTemplateColumn Header="Severity">
+                                    <controls:DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Classes="SeverityBadge"
+                                                    Background="{Binding Severity, Converter={StaticResource SeverityBrushConverter}}">
+                                                <TextBlock Text="{Binding Severity}" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </controls:DataGridTemplateColumn.CellTemplate>
+                                </controls:DataGridTemplateColumn>
+                                <controls:DataGridTextColumn Header="Type" Binding="{Binding EventType}" />
+                                <controls:DataGridTextColumn Header="Request ID" Binding="{Binding RequestId}" />
+                                <controls:DataGridTextColumn Header="Target Service" Binding="{Binding TargetService}" />
+                                <controls:DataGridTextColumn Header="Method" Binding="{Binding Method}" />
+                                <controls:DataGridTextColumn Header="Path" Binding="{Binding Path}" />
+                                <controls:DataGridTextColumn Header="Status" Binding="{Binding StatusCode}" />
+                                <controls:DataGridTextColumn Header="Duration" Binding="{Binding DurationMs}" />
+                                <controls:DataGridTextColumn Header="Exception" Binding="{Binding ExceptionName}" />
+                                <controls:DataGridTextColumn Header="Message" Binding="{Binding ExceptionMessage}" />
+                            </controls:DataGrid.Columns>
+                        </controls:DataGrid>
                     </Grid>
                 </Border>
             </Grid>

@@ -11,6 +11,7 @@
 
     <Application.Styles>
         <FluentTheme />
+        <StyleInclude Source="avares://Avalonia.Controls.DataGrid/Themes/Fluent.xaml" />
         <StyleInclude Source="avares://LogAnalyzerClient/Styles/Controls.axaml" />
     </Application.Styles>
 </Application>
