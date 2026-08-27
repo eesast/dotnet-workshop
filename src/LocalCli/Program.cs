@@ -112,22 +112,125 @@ namespace LocalCli
 
         private static void ShowLogFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            var logFiles = analyzer.GetLogFiles();
+            if (logFiles.Count == 0)
+            {
+                Console.WriteLine("No log files found.");
+                return;
+            }
+            Console.WriteLine("Log files:");
+            foreach (var file in logFiles)
+            {
+                Console.WriteLine($"- {file}");
+            }
         }
 
         private static void AnalyzeFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Enter the degree of parallelism:");
+            int degreeOfParallelism = 0;
+            Console.Write(">>> ");
+            var degreeStr = Console.ReadLine();
+            if (degreeStr is null)
+            {
+                Console.WriteLine("No degree of parallelism entered.");
+                return;
+            }
+            try
+            {
+                degreeOfParallelism = int.Parse(degreeStr);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Invalid input, please try again.");
+                return;
+            }
+            Console.WriteLine("please input log file names (comma separated):");
+            Console.Write(">>> ");
+            var fileNamesStr = Console.ReadLine();
+            if (fileNamesStr is null)
+            {
+                Console.WriteLine("No file names entered.");
+                return;
+            }
+            var fileNames = fileNamesStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            try
+            {
+                analyzer.AnalyzeFiles(degreeOfParallelism, fileNames);
+                Console.WriteLine("Analysis completed.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Analysis failed: {ex.Message}");
+            }
         }
 
         private static void AnalyzeAll(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Enter the degree of parallelism:");
+            int degreeOfParallelism = 0;
+            Console.Write(">>> ");
+            var degreeStr = Console.ReadLine();
+            if (degreeStr is null)
+            {
+                Console.WriteLine("No degree of parallelism entered.");
+                return;
+            }
+            try
+            {
+                degreeOfParallelism = int.Parse(degreeStr);
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Invalid input, please try again.");
+                return;
+            }
+            try
+            {
+                analyzer.AnalyzeAll(degreeOfParallelism);
+                Console.WriteLine("Analysis completed.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Analysis failed: {ex.Message}");
+            }
         }
-
         private static void GetAnalysisResult(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("please input log file name:");
+            Console.Write(">>> ");
+            var fileName = Console.ReadLine();
+            if (fileName is null)
+            {
+                Console.WriteLine("No file name entered.");
+                return;
+            }
+            try
+            {
+                if (!analyzer.TryGetAnalysisResult(fileName, out var result) || result is null)
+                {
+                    Console.WriteLine($"File '{fileName}' not found in the current directory.");
+                    return;
+                }
+                Console.WriteLine($"Analysis result for {fileName}:");
+                Console.WriteLine($"- State: {result.State}");
+                if (result.State == AnalysisState.Failed)
+                {
+                    Console.WriteLine($"- Error message: {result.ErrorMessage}");
+                }
+                else
+                {
+                    Console.WriteLine($"- Number of entries: {result.Entries.Count}");
+                    foreach (var entry in result.Entries)
+                    {
+                        Console.WriteLine($"  - {entry.Timestamp}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting analysis result: {ex.Message}");
+            }
         }
     }
 }
