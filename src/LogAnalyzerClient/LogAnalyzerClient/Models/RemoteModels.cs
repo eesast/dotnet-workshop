@@ -4,6 +4,21 @@ using System.Linq;
 
 namespace LogAnalyzerClient.Models
 {
+    public enum LogTypeFilter
+    {
+        All,
+        Call,
+        Request,
+        Internal,
+    }
+
+    public enum CallCountSort
+    {
+        None,
+        Ascending,
+        Descending,
+    }
+
     public sealed record LogFileItem(string FileName)
     {
         public override string ToString() => FileName;

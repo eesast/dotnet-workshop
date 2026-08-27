@@ -7,6 +7,7 @@ using LogAnalyzerClient.Models;
 using LogAnalyzerClient.Services;
 using LogAnalyzerRpc;
 using LogAnalyzerRpc.Protos;
+using LogParser.Models;
 using LogParser.Visitors;
 using System;
 using System.Collections.Generic;
@@ -23,8 +24,15 @@ namespace LogAnalyzerClient.ViewModels
         internal IDialogHelper DialogHelper { get; set; } = new NullDialogHelper();
 
         private LogAnalyzerAgentServiceClient? _client = null;
+        private readonly List<LogEntry> _allResultEntries = new();
 
         public IReadOnlyList<string> SelectedFiles { get; set; } = new List<string>();
+
+        public IReadOnlyList<LogTypeFilter> LogTypeOptions { get; } =
+            System.Enum.GetValues<LogTypeFilter>();
+
+        public IReadOnlyList<CallCountSort> CallCountSortOptions { get; } =
+            System.Enum.GetValues<CallCountSort>();
 
         [ObservableProperty]
         private string _greeting = "Welcome to Avalonia!";
@@ -55,6 +63,17 @@ namespace LogAnalyzerClient.ViewModels
 
         [ObservableProperty]
         private ObservableCollection<LogFields> _resultEntries = new();
+
+        [ObservableProperty]
+        private string _analysisStatus = "Select an analyzed log file to view its entries.";
+
+        [ObservableProperty]
+        private LogTypeFilter _selectedLogType = LogTypeFilter.All;
+
+        [ObservableProperty]
+        private CallCountSort _selectedCallCountSort = CallCountSort.None;
+
+        public bool IsCallCountSortEnabled => SelectedLogType == LogTypeFilter.Call;
 
         [ObservableProperty]
         private ObservableCollection<TopologyNodeItem> _topologyNodes = new();
@@ -273,15 +292,15 @@ namespace LogAnalyzerClient.ViewModels
                 }
 
                 SelectedResultTabIndex = 0;
+                _allResultEntries.Clear();
                 ResultEntries.Clear();
+                AnalysisStatus = "Loading analysis result...";
                 using var call = _client!.GetAnalysisResult(new GetAnalysisResultRequest
                 {
                     FileName = SelectedLogFile.FileName,
                 });
 
                 var receivedResponse = false;
-                var entryIndex = 0;
-                var dumper = new KeyValueVisitor();
                 await foreach (var response in call.ResponseStream.ReadAllAsync())
                 {
                     receivedResponse = true;
@@ -298,19 +317,18 @@ namespace LogAnalyzerClient.ViewModels
                             switch (response.Header.State)
                             {
                                 case AnalysisStateEnum.NotAnalyzed:
-                                    ResultEntries.Add(new LogFields(-1, [],
-                                        $"File {response.Header.FileName} has not been analyzed yet."));
+                                    AnalysisStatus =
+                                        $"File {response.Header.FileName} has not been analyzed yet.";
                                     break;
                                 case AnalysisStateEnum.Succeeded:
-                                    ResultEntries.Add(new LogFields(-1, [],
-                                        $"File: {response.Header.FileName}; Worker ID: {response.Header.WorkerId}"));
+                                    AnalysisStatus =
+                                        $"File: {response.Header.FileName}; Worker ID: {response.Header.WorkerId}";
                                     break;
                                 case AnalysisStateEnum.Failed:
                                     var errorMessage = response.Header.HasErrorMessage
                                         ? response.Header.ErrorMessage
                                         : "Unknown error.";
-                                    ResultEntries.Add(new LogFields(-1, [],
-                                        $"Analysis failed: {errorMessage}"));
+                                    AnalysisStatus = $"Analysis failed: {errorMessage}";
                                     break;
                                 default:
                                     throw new ClientInternalException(
@@ -319,11 +337,7 @@ namespace LogAnalyzerClient.ViewModels
                             break;
                         case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
                             var entry = GrpcTypeConverter.ConvertFromGrpc(response.LogEntry);
-                            var fields = dumper.Dump(entry)
-                                .Select(pair => new LogFieldItem(pair.Key, pair.Value))
-                                .ToList();
-                            ResultEntries.Add(new LogFields(entryIndex, fields, null));
-                            entryIndex++;
+                            _allResultEntries.Add(entry);
                             break;
                         default:
                             throw new ClientInternalException(
@@ -336,7 +350,77 @@ namespace LogAnalyzerClient.ViewModels
                     throw new ClientInternalException(
                         "The agent returned no analysis result.");
                 }
+
+                ApplyResultView();
             });
+        }
+
+        partial void OnSelectedLogTypeChanged(LogTypeFilter value)
+        {
+            OnPropertyChanged(nameof(IsCallCountSortEnabled));
+
+            if (!IsCallCountSortEnabled && SelectedCallCountSort != CallCountSort.None)
+            {
+                SelectedCallCountSort = CallCountSort.None;
+                return;
+            }
+
+            ApplyResultView();
+        }
+
+        partial void OnSelectedCallCountSortChanged(CallCountSort value)
+        {
+            ApplyResultView();
+        }
+
+        private void ApplyResultView()
+        {
+            var callCounts = _allResultEntries
+                .OfType<CallLogEntry>()
+                .GroupBy(entry => entry.TargetService, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+
+            IEnumerable<LogEntry> entries = SelectedLogType switch
+            {
+                LogTypeFilter.Call => _allResultEntries.OfType<CallLogEntry>(),
+                LogTypeFilter.Request => _allResultEntries.OfType<RequestLogEntry>(),
+                LogTypeFilter.Internal => _allResultEntries.OfType<InternalLogEntry>(),
+                _ => _allResultEntries,
+            };
+
+            if (SelectedLogType == LogTypeFilter.Call)
+            {
+                entries = SelectedCallCountSort switch
+                {
+                    CallCountSort.Ascending => entries
+                        .OrderBy(entry => callCounts[((CallLogEntry)entry).TargetService])
+                        .ThenBy(entry => entry.LineNo),
+                    CallCountSort.Descending => entries
+                        .OrderByDescending(entry => callCounts[((CallLogEntry)entry).TargetService])
+                        .ThenBy(entry => entry.LineNo),
+                    _ => entries.OrderBy(entry => entry.LineNo),
+                };
+            }
+
+            var dumper = new KeyValueVisitor();
+            var visibleEntries = entries
+                .Select((entry, index) =>
+                {
+                    var fields = dumper.Dump(entry)
+                        .Select(pair => new LogFieldItem(pair.Key, pair.Value))
+                        .ToList();
+
+                    if (entry is CallLogEntry callEntry)
+                    {
+                        fields.Add(new LogFieldItem(
+                            "CallCount",
+                            callCounts[callEntry.TargetService].ToString()));
+                    }
+
+                    return new LogFields(index, fields, null);
+                });
+
+            ResultEntries = new ObservableCollection<LogFields>(visibleEntries);
         }
 
         [RelayCommand]

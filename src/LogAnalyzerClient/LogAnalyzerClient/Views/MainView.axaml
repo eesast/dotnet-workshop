@@ -243,16 +243,35 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 <Border Classes="Card results-card">
                     <TabControl SelectedIndex="{Binding SelectedResultTabIndex, Mode=TwoWay}">
                         <TabItem Header="Analysis Result">
-                            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="8">
                                 <TextBlock Grid.Row="0" Classes="SectionTitle" Text="Analysis Result" />
 
                                 <TextBlock Grid.Row="1"
                                            Classes="SubtleText"
-                                           Text="Analysis results. Each line is a single log entry."
+                                           Text="Filter entries by type. Call count is the number of calls received by the same target service."
+                                           TextWrapping="Wrap" />
+
+                                <StackPanel Grid.Row="2"
+                                            Orientation="Horizontal"
+                                            Spacing="8">
+                                    <TextBlock VerticalAlignment="Center" Text="Log type" />
+                                    <ComboBox MinWidth="100"
+                                              ItemsSource="{Binding LogTypeOptions, Mode=OneWay}"
+                                              SelectedItem="{Binding SelectedLogType, Mode=TwoWay}" />
+                                    <TextBlock VerticalAlignment="Center" Text="Call count" />
+                                    <ComboBox MinWidth="110"
+                                              ItemsSource="{Binding CallCountSortOptions, Mode=OneWay}"
+                                              SelectedItem="{Binding SelectedCallCountSort, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsCallCountSortEnabled, Mode=OneWay}" />
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="3"
+                                           Classes="SubtleText"
+                                           Text="{Binding AnalysisStatus, Mode=OneWay}"
                                            TextWrapping="Wrap" />
 
                                 <ListBox Name="ResultEntryListBox"
-                                         Grid.Row="2"
+                                         Grid.Row="4"
                                          ItemsSource="{Binding ResultEntries, Mode=OneWay}">
                                     <ListBox.ItemTemplate>
                                         <DataTemplate x:DataType="models:LogFields">
