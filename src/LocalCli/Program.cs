@@ -112,22 +112,115 @@ namespace LocalCli
 
         private static void ShowLogFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            var _logfiles = analyzer.GetLogFiles();
+            foreach (var file in _logfiles)
+            {
+                Console.WriteLine(file);
+            }
+        }
+
+        private static int ReadDegreeOfParallelism()
+        {
+            while (true)
+            {
+                Console.WriteLine("Please input the degree of parallelism (0 means auto):");
+                Console.Write(">>> ");
+                Console.Out.Flush();
+                var str = Console.ReadLine();
+                if (str is null)
+                {
+                    return 0;
+                }
+                if (int.TryParse(str, out var degree) && degree >= 0)
+                {
+                    return degree;
+                }
+                Console.WriteLine("Invalid input, please try again.");
+            }
+        }
+
+        private static List<string> ReadFileNames()
+        {
+            Console.WriteLine("Please input file names to analyze, separated by commas:");
+            Console.Write(">>> ");
+            Console.Out.Flush();
+            var str = Console.ReadLine();
+            if (str is null)
+            {
+                return [];
+            }
+            return [.. str.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)];
         }
 
         private static void AnalyzeFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            var degreeOfParallelism = ReadDegreeOfParallelism();
+            var fileNames = ReadFileNames();
+            if (fileNames.Count == 0)
+            {
+                Console.WriteLine("No file names input.");
+                return;
+            }
+
+            try
+            {
+                analyzer.AnalyzeFiles(degreeOfParallelism, fileNames);
+                Console.WriteLine("Analysis finished.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Analysis failed: {ex.Message}");
+            }
         }
 
         private static void AnalyzeAll(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            var degreeOfParallelism = ReadDegreeOfParallelism();
+            try
+            {
+                analyzer.AnalyzeAll(degreeOfParallelism);
+                Console.WriteLine("Analysis finished.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Analysis failed: {ex.Message}");
+            }
         }
 
         private static void GetAnalysisResult(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Please input the file name:");
+            Console.Write(">>> ");
+            Console.Out.Flush();
+            var fileName = Console.ReadLine();
+            if (fileName is null)
+            {
+                return;
+            }
+
+            if (!analyzer.TryGetAnalysisResult(fileName, out var result))
+            {
+                Console.WriteLine($"File '{fileName}' not found.");
+                return;
+            }
+
+            switch (result!.State)
+            {
+                case AnalysisState.NotAnalyzed:
+                    Console.WriteLine($"File '{fileName}' has not been analyzed.");
+                    break;
+                case AnalysisState.Succeeded:
+                    var dumper = new KeyValueVisitor();
+                    foreach (var entry in result.Entries)
+                    {
+                        var kvPairs = dumper.Dump(entry);
+                        Console.WriteLine(string.Join(", ", kvPairs.Select(kv => $"{kv.Key}: {kv.Value}")));
+                    }
+                    break;
+                case AnalysisState.Failed:
+                    Console.WriteLine($"Analysis of file '{fileName}' failed: {result.ErrorMessage}");
+                    break;
+            }
         }
     }
 }
