@@ -1,0 +1,40 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LogAnalyzerClient.AdminTokenWindow"
+        x:CompileBindings="False"
+        Title="管理员 - Token 管理控制台" Height="450" Width="700">
+    <Grid Margin="10" RowDefinitions="Auto,Auto,*,Auto">
+        <!-- 1. 动态 Token 设置区域 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
+            <TextBlock Text="Admin Token:" VerticalAlignment="Center" FontWeight="Bold"/>
+            <TextBox x:Name="TokenTextBox" Width="380" PlaceholderText="请粘贴后端控制台打印的 Initial Admin Token"/>
+            <Button Content="应用 Token 并刷新" Click="OnApplyTokenClick"/>
+        </StackPanel>
+
+        <!-- 2. 操作工具栏 -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
+            <TextBlock Text="新建角色：" VerticalAlignment="Center"/>
+            <ComboBox x:Name="RoleComboBox" Width="140" SelectedIndex="0">
+                <ComboBoxItem Content="ROLE_NORMAL"/>
+                <ComboBoxItem Content="ROLE_ADMIN"/>
+            </ComboBox>
+            <Button Content="生成新 Token" Click="OnCreateTokenClick"/>
+        </StackPanel>
+
+        <!-- 3. Token 数据表格 -->
+        <DataGrid Grid.Row="2" x:Name="TokenDataGrid" ItemsSource="{Binding TokenList}" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Token 标识" Binding="{Binding Token}" Width="*"/>
+                <DataGridTextColumn Header="权限角色" Binding="{Binding Role}" Width="120"/>
+                <DataGridTextColumn Header="创建时间" Binding="{Binding CreatedAt}" Width="160"/>
+                <DataGridTemplateColumn Header="操作" Width="80">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="撤销" Foreground="Red" Click="OnRevokeTokenClick"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Window>

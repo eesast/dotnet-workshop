@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LogAnalyzerClient.Views.TopologyWindow"
+        x:CompileBindings="False"
+        Title="Service Topology" Width="900" Height="600">
+    <DockPanel>
+        <TextBlock DockPanel.Dock="Top" x:Name="StatusText" Margin="10" Text="Loading..." />
+
+        <Border DockPanel.Dock="Bottom" Margin="10" Padding="8" BorderThickness="1" CornerRadius="6"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Top" Text="Edge Logs (点击图中的边查看对应 Call 日志)" FontWeight="SemiBold" Margin="0,0,0,6" />
+                <ListBox x:Name="EdgeLogListBox" Height="140" />
+            </DockPanel>
+        </Border>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+            <Canvas x:Name="TopologyCanvas" Background="Transparent" />
+        </ScrollViewer>
+    </DockPanel>
+</Window>

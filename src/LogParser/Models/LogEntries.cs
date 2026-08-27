@@ -1,4 +1,6 @@
-﻿namespace LogParser.Models
+﻿using System;
+
+namespace LogParser.Models
 {
     public enum LogSeverity
     {
@@ -54,7 +56,7 @@
     {
         public override TResult Accept<TResult>(ILogEntryVisitor<TResult> visitor)
         {
-            throw new NotImplementedException("TODO: T1.2");
+            return visitor.Visit(this);
         }
     }
 
@@ -69,7 +71,7 @@
     {
         public override TResult Accept<TResult>(ILogEntryVisitor<TResult> visitor)
         {
-            throw new NotImplementedException("TODO: T1.2");
+            return visitor.Visit(this);
         }
     }
 

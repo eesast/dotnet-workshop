@@ -1,4 +1,4 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using Google.Protobuf;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
@@ -8,13 +8,13 @@ namespace LogAnalyzerClient.Helpers
 {
     internal interface IDialogHelper
     {
-        Task<string?> ShowConnectDialogAsync(string currentAddress);
+        Task<ConnectInfo?> ShowConnectDialogAsync(string currentAddress, string currentToken);
         Task ShowMessageDialogAsync(string title, string message);
     }
 
     internal class NullDialogHelper : IDialogHelper
     {
-        public Task<string?> ShowConnectDialogAsync(string currentAddress)
+        public Task<ConnectInfo?> ShowConnectDialogAsync(string currentAddress, string currentToken)
         {
             throw new ClientInternalException("Unknown error: No Window owner.");
         }
@@ -34,10 +34,10 @@ namespace LogAnalyzerClient.Helpers
             _owner = owner;
         }
 
-        public async Task<string?> ShowConnectDialogAsync(string currentAddress)
+        public async Task<ConnectInfo?> ShowConnectDialogAsync(string currentAddress, string currentToken)
         {
-            var dialog = new ConnectDialog(currentAddress);
-            return await dialog.ShowDialog<string?>(_owner);
+            var dialog = new ConnectDialog(currentAddress, currentToken);
+            return await dialog.ShowDialog<ConnectInfo?>(_owner);
         }
 
         public async Task ShowMessageDialogAsync(string title, string message)
@@ -50,11 +50,14 @@ namespace LogAnalyzerClient.Helpers
     [SupportedOSPlatform("browser")]
     internal class BrowserDialogHelper : IDialogHelper
     {
-        public async Task<string?> ShowConnectDialogAsync(string currentAddress)
+        public async Task<ConnectInfo?> ShowConnectDialogAsync(string currentAddress, string currentToken)
         {
             return await Task.Run(() =>
             {
-                return BrowserInterop.Prompt("Please input the address of Agent:", currentAddress);
+                var address = BrowserInterop.Prompt("Please input the address of Agent:", currentAddress);
+                if (address is null) return null;
+                var token = BrowserInterop.Prompt("Please input the Agent token:", currentToken);
+                return new ConnectInfo(address, token ?? string.Empty);
             });
         }
 

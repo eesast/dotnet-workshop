@@ -4,17 +4,23 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         x:Class="LogAnalyzerClient.ConnectDialog"
-        d:DesignWidth="440" d:DesignHeight="180"
-        Width="440" Height="180"
+        d:DesignWidth="480" d:DesignHeight="260"
+        Width="480" Height="280"
         CanResize="False" WindowStartupLocation="CenterOwner"
         Title="Connect...">
-    <StackPanel Margin="15" Spacing="10">
-        <TextBlock Text="Please input the address of Agent:" />
+    <StackPanel Margin="15" Spacing="8">
+        <TextBlock Text="Agent address:" />
         <TextBox Name="AddressTextBox"
                  PlaceholderText="e.g. http://localhost:5000" />
+
+        <TextBlock Text="Token (printed in the Agent console on startup):" />
+        <TextBox Name="TokenTextBox"
+                 PlaceholderText="paste the admin token here" />
+
         <StackPanel Orientation="Horizontal"
                     HorizontalAlignment="Right"
-                    Spacing="5">
+                    Spacing="5"
+                    Margin="0,6,0,0">
             <Button Classes="PrimaryButton"
                     Content="Connect"
                     IsDefault="True"

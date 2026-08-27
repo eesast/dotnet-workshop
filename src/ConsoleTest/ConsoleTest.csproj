@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,10 +9,12 @@
 
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.83.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\LogAnalyzer\LogAnalyzer.csproj" />
+    <ProjectReference Include="..\LogAnalyzerRpc\LogAnalyzerRpc.csproj" />
     <ProjectReference Include="..\LogParser\LogParser.csproj" />
 	  <None Include="..\dataset\**\*.log">
 		  <Link>dataset\%(RecursiveDir)%(Filename)%(Extension)</Link>

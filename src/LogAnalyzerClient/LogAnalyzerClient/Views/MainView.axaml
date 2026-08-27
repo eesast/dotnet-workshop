@@ -1,15 +1,13 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                xmlns:vm="using:LogAnalyzerClient.ViewModels"
-                xmlns:models="using:LogAnalyzerClient.Models"
-                mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-                x:Class="LogAnalyzerClient.Views.MainView"
-                x:DataType="vm:MainViewModel">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LogAnalyzerClient.ViewModels"
+             xmlns:models="using:LogAnalyzerClient.Models"
+             mc:Ignorable="d" d:DesignWidth="1100" d:DesignHeight="700"
+             x:Class="LogAnalyzerClient.Views.MainView"
+             x:CompileBindings="False">
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
 
@@ -21,7 +19,10 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 <Separator />
                 <MenuItem Header="Exit(_E)" Name="ExitMenuItem" Click="ExitMenuItem_Click" />
             </MenuItem>
-            <MenuItem Header="About(_A)" Command="{Binding AboutCommand}" />
+            <MenuItem Header="Admin(_A)">
+                <MenuItem Header="Token Management..." Click="OnOpenAdminClick" />
+            </MenuItem>
+            <MenuItem Header="About(_B)" Command="{Binding AboutCommand}" />
         </Menu>
 
         <Border DockPanel.Dock="Bottom"
@@ -31,65 +32,65 @@ to set the actual DataContext for runtime, set the DataContext property in code 
             <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
                 <TextBlock Text="[Status] " />
                 <TextBlock Text="{Binding ConnectStatus}" />
-                <TextBlock Text="Agent address: " />
+                <TextBlock Text="  Agent address: " />
                 <TextBlock Text="{Binding CurrentAddress}" />
                 <TextBlock Text="; Current Directory: " />
                 <TextBlock Text="{Binding DirectoryPath}" />
             </StackPanel>
         </Border>
 
-        <Grid Margin="16" RowSpacing="10">
+        <Grid Margin="16" RowSpacing="8">
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" /> <!-- 0: Token 认证 -->
+                <RowDefinition Height="Auto" /> <!-- 1: 目录路径 -->
+                <RowDefinition Height="*" />    <!-- 2: 文件与结果 -->
             </Grid.RowDefinitions>
 
-            <StackPanel
-                Grid.Row="0"
-                Grid.Column="0"
-                Spacing="4"
-            >
-                <TextBlock Classes="TitleText" Text="LogAnalyzerClient" />
-                <TextBlock Classes="SubtleText" Text="GUI remote client of LogAnalyzer." />
-            </StackPanel>
-
-            <Border
-                Grid.Row="1"
-                Grid.Column="0"
-                Classes="Card"
-            >
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="5" RowSpacing="5">
-                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Directory Path" />
-                    <TextBox Grid.Row="0" Grid.Column="1"
-                             Text="{Binding DirectoryPath, Mode=OneWayToSource}"
-                             PlaceholderText="Input the directory path on the node" />
-                    <Button Grid.Row="0" Grid.Column="2" Classes="SecondaryButton" Content="Change Directory" Command="{Binding ChangeDirectoryCommand}" />
-                    <Button Grid.Row="0" Grid.Column="3" Classes="SecondaryButton" Content="Refresh" Command="{Binding RefreshCommand}" />
+            <!-- Token 认证 -->
+            <Border Grid.Row="0" Classes="Card" Padding="10">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Token:" FontWeight="SemiBold" />
+                    <TextBox Grid.Column="1" Name="TokenTextBox"
+                             Text="{Binding CurrentToken, Mode=TwoWay}"
+                             PlaceholderText="Paste the Agent token here (from the Agent console)" />
+                    <Button Grid.Column="2" Classes="SecondaryButton" Content="Apply Token"
+                            Command="{Binding ApplyTokenCommand}" />
                 </Grid>
             </Border>
 
-            <Grid Grid.Row="2" Margin="0,10,0,10" ColumnSpacing="15">
+            <!-- 目录路径 -->
+            <Border Grid.Row="1" Classes="Card" Padding="10">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+                    <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Directory Path" />
+                    <TextBox Grid.Column="1"
+                             Text="{Binding DirectoryPath, Mode=TwoWay}"
+                             PlaceholderText="Input the directory path on the agent node" />
+                    <Button Grid.Column="2" Classes="SecondaryButton" Content="Change Directory" Command="{Binding ChangeDirectoryCommand}" />
+                    <Button Grid.Column="3" Classes="SecondaryButton" Content="Refresh" Command="{Binding RefreshCommand}" />
+                </Grid>
+            </Border>
+
+            <!-- 文件列表 + 查询/结果 -->
+            <Grid Grid.Row="2" ColumnSpacing="15">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*" MaxWidth="360" MinWidth="50" />
-                    <ColumnDefinition Width="3*" />
+                    <ColumnDefinition Width="2*" MaxWidth="340" MinWidth="120" />
+                    <ColumnDefinition Width="5*" />
                 </Grid.ColumnDefinitions>
+
+                <!-- 左：日志文件 -->
                 <Border Grid.Column="0" Classes="Card">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Top" Spacing="8">
-                            <TextBlock Classes="SectionTitle" Text="Log Files" />
-                            <TextBlock Classes="SubtleText" Text="Supports multiple selection (hold Ctrl). Right-click to view analysis results for the currently selected files." TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                                <TextBlock Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Center" Text="DoP" />
-                                <TextBox Name="DegreeTextBox"
-                                         Grid.Column="1"
+                            <TextBlock Classes="SectionTitle" Text="Log Files" FontWeight="SemiBold"/>
+                            <TextBlock Classes="SubtleText" Text="支持多选（按住 Ctrl）。右键可分析、查看结果或显示拓扑。" TextWrapping="Wrap" />
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="6">
+                                <TextBlock Grid.Column="0" Margin="0,0,4,0" VerticalAlignment="Center" Text="DoP" />
+                                <TextBox Grid.Column="1"
                                          Classes="NumericInput"
-                                         Text="{Binding DegreeOfParallelismText}"
+                                         Text="{Binding DegreeOfParallelismText, Mode=TwoWay}"
                                          PlaceholderText="Degree of Parallelism" />
-                                <TextBlock Grid.Column="2" Margin="10,0,5,0" VerticalAlignment="Center" Text="Analyze" />
-                                <Button Grid.Column="3" Content="Selected" Command="{Binding AnalyzeSelectedFilesCommand}" />
-                                <!-- TODO: T4.1 -->
-                                <!-- Add "All" button -->
+                                <Button Grid.Column="2" Content="Selected" Command="{Binding AnalyzeSelectedFilesCommand}" />
+                                <Button Grid.Column="3" Content="All" Command="{Binding AnalyzeAllCommand}" Margin="4,0,0,0" />
                             </Grid>
                         </StackPanel>
 
@@ -97,46 +98,119 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                  Classes="FileList"
                                  Margin="0,12,0,0"
                                  ItemsSource="{Binding LogFiles, Mode=OneWay}"
-                                 SelectedItem="{Binding SelectedLogFile, Mode=OneWayToSource}"
+                                 SelectedItem="{Binding SelectedLogFile, Mode=TwoWay}"
                                  SelectionMode="Multiple"
-                                 SelectionChanged="LogFileListBox_SelectionChanged"
-                                 >
+                                 SelectionChanged="LogFileListBox_SelectionChanged">
                             <ListBox.ContextMenu>
                                 <ContextMenu>
                                     <MenuItem Header="Analyze File(_A)" Command="{Binding AnalyzeRightClickedFileCommand}"/>
                                     <MenuItem Header="View Analysis Results(_V)" Command="{Binding GetAnalysisResultCommand}" />
+                                    <MenuItem Header="Show Topology(_T)" Click="OnShowTopologyClick" />
                                 </ContextMenu>
                             </ListBox.ContextMenu>
                             <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFileItem">
-                                    <TextBlock Text="{Binding FileName, Mode=OneWay}" />
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding FileName}" />
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
                     </DockPanel>
                 </Border>
 
+                <!-- 右：查询面板 + 表格结果 -->
                 <Border Grid.Column="1" Classes="Card">
-                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
-                            <TextBlock Classes="SectionTitle" Text="Analysis Result" />
+                    <DockPanel>
+                        <!-- 查询面板 -->
+                        <StackPanel DockPanel.Dock="Top" Spacing="6">
+                            <TextBlock Classes="SectionTitle" Text="Analysis Result" FontWeight="SemiBold"/>
+
+                            <WrapPanel>
+                                <TextBlock VerticalAlignment="Center" Margin="0,0,4,0" Text="Event:" />
+                                <ComboBox Width="110" SelectedIndex="{Binding EventTypeIndex, Mode=TwoWay}">
+                                    <ComboBoxItem Content="All" />
+                                    <ComboBoxItem Content="Call" />
+                                    <ComboBoxItem Content="Request" />
+                                    <ComboBoxItem Content="Internal" />
+                                </ComboBox>
+
+                                <TextBlock VerticalAlignment="Center" Margin="12,0,4,0" Text="Severity:" />
+                                <ComboBox Width="110" SelectedIndex="{Binding SeverityIndex, Mode=TwoWay}">
+                                    <ComboBoxItem Content="All" />
+                                    <ComboBoxItem Content="Info" />
+                                    <ComboBoxItem Content="Warning" />
+                                    <ComboBoxItem Content="Error" />
+                                </ComboBox>
+
+                                <TextBlock VerticalAlignment="Center" Margin="12,0,4,0" Text="Service:" />
+                                <TextBox Width="110" PlaceholderText="e.g. gateway"
+                                         Text="{Binding QueryServiceName, Mode=TwoWay}" />
+
+                                <TextBlock VerticalAlignment="Center" Margin="12,0,4,0" Text="RequestID:" />
+                                <TextBox Width="160" PlaceholderText="request-id"
+                                         Text="{Binding QueryRequestId, Mode=TwoWay}" />
+                            </WrapPanel>
+
+                            <WrapPanel>
+                                <TextBlock VerticalAlignment="Center" Margin="0,0,4,0" Text="Sort:" />
+                                <ComboBox Width="120" SelectedIndex="{Binding SortByIndex, Mode=TwoWay}">
+                                    <ComboBoxItem Content="None" />
+                                    <ComboBoxItem Content="LineNo" />
+                                    <ComboBoxItem Content="Timestamp" />
+                                    <ComboBoxItem Content="Severity" />
+                                    <ComboBoxItem Content="PodName" />
+                                </ComboBox>
+                                <CheckBox Margin="12,0,0,0" VerticalAlignment="Center" Content="Descending"
+                                          IsChecked="{Binding IsDescending, Mode=TwoWay}" />
+
+                                <TextBlock VerticalAlignment="Center" Margin="12,0,4,0" Text="Start:" />
+                                <TextBox Width="180" PlaceholderText="2026-06-05T16:00:00Z"
+                                         Text="{Binding QueryStartTime, Mode=TwoWay}" />
+                                <TextBlock VerticalAlignment="Center" Margin="12,0,4,0" Text="End:" />
+                                <TextBox Width="180" PlaceholderText="2026-06-05T16:10:00Z"
+                                         Text="{Binding QueryEndTime, Mode=TwoWay}" />
+                            </WrapPanel>
+
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="View All" Command="{Binding GetAnalysisResultCommand}" />
+                                <Button Content="Apply Query" Command="{Binding QueryCommand}" />
+                                <Button Content="Reset" Command="{Binding ResetQueryCommand}" />
+                                <Button Content="Show Topology" Click="OnShowTopologyClick" />
+                            </StackPanel>
                         </StackPanel>
 
-                        <TextBlock Grid.Row="1"
-                                   Classes="SubtleText"
-                                   Text="Analysis results. Each line is a single log entry."
-                                   TextWrapping="Wrap" />
-
-                        <ListBox Name="ResultEntryListBox"
-                                Grid.Row="2"
-                                ItemsSource="{Binding ResultEntries, Mode=OneWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Grid>
+                        <!-- 表格结果 -->
+                        <DataGrid Name="ResultDataGrid"
+                                  ItemsSource="{Binding ResultRows, Mode=OneWay}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserSortColumns="True"
+                                  GridLinesVisibility="Horizontal">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="#" Binding="{Binding LineNo}" Width="70" />
+                                <DataGridTextColumn Header="Timestamp" Binding="{Binding Timestamp}" Width="180" />
+                                <DataGridTextColumn Header="Service" Binding="{Binding Service}" Width="110" />
+                                <DataGridTextColumn Header="Pod" Binding="{Binding PodName}" Width="110" />
+                                <DataGridTemplateColumn Header="Severity" Width="110">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Border Background="{Binding SeverityBrush}" CornerRadius="10" Padding="8,2" HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding SeverityText}" Foreground="White" FontWeight="SemiBold" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Event" Binding="{Binding EventType}" Width="90" />
+                                <DataGridTextColumn Header="RequestID" Binding="{Binding RequestId}" Width="200" />
+                                <DataGridTextColumn Header="Target" Binding="{Binding TargetService}" Width="110" />
+                                <DataGridTextColumn Header="Dur(ms)" Binding="{Binding DurationMs}" Width="80" />
+                                <DataGridTextColumn Header="Method" Binding="{Binding Method}" Width="80" />
+                                <DataGridTextColumn Header="Path" Binding="{Binding Path}" Width="160" />
+                                <DataGridTextColumn Header="Status" Binding="{Binding StatusCode}" Width="70" />
+                                <DataGridTextColumn Header="Exception" Binding="{Binding ExceptionName}" Width="200" />
+                                <DataGridTextColumn Header="Exception Message" Binding="{Binding ExceptionMessage}" Width="280" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </DockPanel>
                 </Border>
             </Grid>
         </Grid>

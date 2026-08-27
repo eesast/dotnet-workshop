@@ -1,24 +1,25 @@
-
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Interactivity;
 using LogAnalyzerClient.Helpers;
 using LogAnalyzerClient.Models;
 using LogAnalyzerClient.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.JavaScript;
 
 namespace LogAnalyzerClient.Views
 {
     public partial class MainView : UserControl
     {
+        private const string DefaultServerUrl = "http://localhost:5000";
+
         public MainView()
         {
             InitializeComponent();
 
-            Loaded += (sender, e) =>
+            Loaded += (_, _) =>
             {
                 if (DataContext is MainViewModel viewModel)
                 {
@@ -28,28 +29,18 @@ namespace LogAnalyzerClient.Views
                     }
                     else if (OperatingSystem.IsBrowser())
                     {
-                        Console.WriteLine("Browser environment detected.");
                         viewModel.DialogHelper = new BrowserDialogHelper();
                     }
-                }
-                else
-                {
-                    Console.Error.WriteLine("Error: DataContext is not MainViewModel.");
                 }
             };
 
             if (Application.Current?.ApplicationLifetime is not IClassicDesktopStyleApplicationLifetime)
             {
-                Console.WriteLine("Non-desktop environment detected.");
                 ExitMenuItem.IsEnabled = false;
-            }
-            else
-            {
-                Console.WriteLine("Desktop environment detected.");
             }
         }
 
-        private void ExitMenuItem_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+        private void ExitMenuItem_Click(object? sender, RoutedEventArgs e)
         {
             if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -69,6 +60,53 @@ namespace LogAnalyzerClient.Views
                 .Select(item => item.FileName)
                 .ToList() ?? new List<string>();
             viewModel.SelectedFiles = selectedNames;
+        }
+
+        private void OnOpenAdminClick(object? sender, RoutedEventArgs e)
+        {
+            var serverUrl = GetServerUrl();
+            var window = new AdminTokenWindow(serverUrl);
+            if (TopLevel.GetTopLevel(this) is Window owner)
+            {
+                window.Show(owner);
+            }
+            else
+            {
+                window.Show();
+            }
+        }
+
+        private void OnShowTopologyClick(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is not MainViewModel viewModel)
+            {
+                return;
+            }
+
+            if (viewModel.SelectedLogFile is null || string.IsNullOrEmpty(viewModel.SelectedLogFile.FileName))
+            {
+                _ = viewModel.DialogHelper.ShowMessageDialogAsync("Warning", "请先在左侧选择一个日志文件。");
+                return;
+            }
+
+            var window = new TopologyWindow(GetServerUrl(), viewModel.SelectedLogFile.FileName);
+            if (TopLevel.GetTopLevel(this) is Window owner)
+            {
+                window.Show(owner);
+            }
+            else
+            {
+                window.Show();
+            }
+        }
+
+        private string GetServerUrl()
+        {
+            if (DataContext is MainViewModel { CurrentAddress: { Length: > 0 } address })
+            {
+                return address;
+            }
+            return DefaultServerUrl;
         }
     }
 }

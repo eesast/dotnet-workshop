@@ -1,4 +1,4 @@
-﻿syntax = "proto3";
+syntax = "proto3";
 
 option csharp_namespace = "LogAnalyzerRpc.Protos";
 
@@ -8,13 +8,25 @@ import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 
 service LogAnalyzerAgentService {
-	rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
-	rpc GetAgentStatus(google.protobuf.Empty) returns (GetAgentStatusResponse);
-	rpc ChangeDirectory(ChangeDirectoryRequest) returns (ChangeDirectoryResponse);
-	rpc GetLogFiles(google.protobuf.Empty) returns (GetLogFilesResponse);
-	rpc AnalyzeAll(AnalyzeAllRequest) returns (AnalyzeAllResponse);
-	rpc AnalyzeFiles(AnalyzeFilesRequest) returns (AnalyzeFilesResponse);
-	rpc GetAnalysisResult(GetAnalysisResultRequest) returns (stream GetAnalysisResultResponse);
+
+  rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc GetAgentStatus(google.protobuf.Empty) returns (GetAgentStatusResponse);
+  rpc ChangeDirectory(ChangeDirectoryRequest) returns (ChangeDirectoryResponse);
+  rpc GetLogFiles(google.protobuf.Empty) returns (GetLogFilesResponse);
+  rpc AnalyzeAll(AnalyzeAllRequest) returns (AnalyzeAllResponse);
+  rpc AnalyzeFiles(AnalyzeFilesRequest) returns (AnalyzeFilesResponse);
+  rpc GetAnalysisResult(GetAnalysisResultRequest) returns (stream GetAnalysisResultResponse);
+
+  rpc CreateToken(CreateTokenRequest) returns (CreateTokenResponse);
+  rpc RevokeToken(RevokeTokenRequest) returns (RevokeTokenResponse);
+  rpc ListTokens(google.protobuf.Empty) returns (ListTokensResponse);
+
+  rpc QueryAnalysisResult(QueryAnalysisResultRequest) returns (stream GetAnalysisResultResponse);
+
+  rpc GetTopology(GetTopologyRequest) returns (GetTopologyResponse);
+
+  rpc ExportParquet(ExportParquetRequest) returns (ExportParquetResponse);
+  rpc ImportParquet(ImportParquetRequest) returns (ImportParquetResponse);
 }
 
 enum AgentErrorCode {
@@ -24,12 +36,31 @@ enum AgentErrorCode {
   FILE_NOT_FOUND = 3;
   INVALID_OPERATION = 4;
   INTERNAL_ERROR = 5;
+  UNAUTHORIZED = 6;
 }
 
 message OperationStatusMessage {
   bool success = 1;
   AgentErrorCode code = 2;
   string message = 3;
+}
+
+enum AnalysisStateEnum {
+  NOT_ANALYZED = 0;
+  SUCCEEDED = 1;
+  FAILED = 2;
+}
+
+enum LogSeverityEnum {
+  INFO = 0;
+  WARNING = 1;
+  ERROR = 2;
+}
+
+enum LogEventTypeEnum {
+  CALL = 0;
+  REQUEST = 1;
+  INTERNAL = 2;
 }
 
 message GetAgentStatusResponse {
@@ -76,77 +107,156 @@ message GetAnalysisResultRequest {
   string file_name = 1;
 }
 
-enum AnalysisStateEnum {
-	NOT_ANALYZED = 0;
-	SUCCEEDED = 1;
-	FAILED = 2;
-}
-
 message AnalysisResultHeaderMessage {
-	string file_name = 1;
-	string full_name = 2;
-	AnalysisStateEnum state = 3;
-	optional string error_message = 4;
-	int32 worker_id = 5;
-}
-
-enum LogSeverityEnum {
-  INFO = 0;
-  WARNING = 1;
-  ERROR = 2;
-}
-
-enum LogEventTypeEnum {
-  CALL = 0;
-  REQUEST = 1;
-  INTERNAL = 2;
+  string file_name = 1;
+  string full_name = 2;
+  AnalysisStateEnum state = 3;
+  optional string error_message = 4;
+  int32 worker_id = 5;
 }
 
 message CallLogEntryMessage {
-	int32 line_no = 1;
-	google.protobuf.Timestamp timestamp = 2;
-	string pod_name = 3;
-	LogSeverityEnum severity = 4;
-	LogEventTypeEnum event_type = 5;
-	string request_id = 6;
-	string target_service = 7;
-	int32 duration_ms = 8;
+  int32 line_no = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string pod_name = 3;
+  LogSeverityEnum severity = 4;
+  LogEventTypeEnum event_type = 5;
+  string request_id = 6;
+  string target_service = 7;
+  int32 duration_ms = 8;
 }
 
 message RequestLogEntryMessage {
-	int32 line_no = 1;
-	google.protobuf.Timestamp timestamp = 2;
-	string pod_name = 3;
-	LogSeverityEnum severity = 4;
-	LogEventTypeEnum event_type = 5;
-	string request_id = 6;
-	string method = 7;
-	string path = 8;
-	int32 status_code = 9;
+  int32 line_no = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string pod_name = 3;
+  LogSeverityEnum severity = 4;
+  LogEventTypeEnum event_type = 5;
+  string request_id = 6;
+  string method = 7;
+  string path = 8;
+  int32 status_code = 9;
 }
 
 message InternalLogEntryMessage {
-	int32 line_no = 1;
-	google.protobuf.Timestamp timestamp = 2;
-	string pod_name = 3;
-	LogSeverityEnum severity = 4;
-	LogEventTypeEnum event_type = 5;
-	string exception_name = 6;
-	string exception_message = 7;
+  int32 line_no = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string pod_name = 3;
+  LogSeverityEnum severity = 4;
+  LogEventTypeEnum event_type = 5;
+  string exception_name = 6;
+  string exception_message = 7;
 }
 
 message LogEntryMessage {
-	oneof entry {
-		CallLogEntryMessage call_log_entry = 1;
-		RequestLogEntryMessage request_log_entry = 2;
-		InternalLogEntryMessage internal_log_entry = 3;
-	};
+  oneof entry {
+    CallLogEntryMessage call_log_entry = 1;
+    RequestLogEntryMessage request_log_entry = 2;
+    InternalLogEntryMessage internal_log_entry = 3;
+  };
 }
 
 message GetAnalysisResultResponse {
-	oneof payload {
-		AnalysisResultHeaderMessage header = 1;
-		LogEntryMessage log_entry = 2;
-	}
-	OperationStatusMessage status = 3;
+  oneof payload {
+    AnalysisResultHeaderMessage header = 1;
+    LogEntryMessage log_entry = 2;
+  }
+  OperationStatusMessage status = 3;
+}
+
+enum TokenRole {
+  ROLE_UNSPECIFIED = 0;
+  ROLE_NORMAL = 1;
+  ROLE_ADMIN = 2;
+}
+
+message TokenInfo {
+  string token = 1;
+  TokenRole role = 2;
+  google.protobuf.Timestamp created_at = 3;
+}
+
+message CreateTokenRequest {
+  TokenRole role = 1;
+}
+
+message CreateTokenResponse {
+  TokenInfo token_info = 1;
+  OperationStatusMessage status = 2;
+}
+
+message RevokeTokenRequest {
+  string token = 1;
+}
+
+message RevokeTokenResponse {
+  OperationStatusMessage status = 1;
+}
+
+message ListTokensResponse {
+  repeated TokenInfo tokens = 1;
+  OperationStatusMessage status = 2;
+}
+
+message LogFilter {
+  optional LogEventTypeEnum event_type = 1;
+  optional LogSeverityEnum severity = 2;
+  string pod_name = 3;
+  string request_id = 4;
+  string service_name = 5;
+  google.protobuf.Timestamp start_time = 6;
+  google.protobuf.Timestamp end_time = 7;
+  repeated string request_ids = 8;
+}
+
+message LogSortOptions {
+  string sort_by = 1;     // Timestamp, Severity, LineNo, PodName
+  bool is_descending = 2;
+}
+
+message QueryAnalysisResultRequest {
+  string file_name = 1;
+  LogFilter filter = 2;
+  LogSortOptions sort = 3;
+}
+
+// ==========================================
+// T5.1.a.d 云服务拓扑推断消息
+// ==========================================
+message GetTopologyRequest {
+  string file_name = 1;
+}
+
+message TopologyNode {
+  string service_name = 1;
+}
+
+message TopologyEdge {
+  string source_service = 1;
+  string target_service = 2;
+  int32 call_count = 3;
+  repeated string request_ids = 4;
+}
+
+message GetTopologyResponse {
+  repeated TopologyNode nodes = 1;
+  repeated TopologyEdge edges = 2;
+  OperationStatusMessage status = 3;
+}
+message ExportParquetRequest {
+  string log_file_name = 1;
+  string target_parquet_path = 2;
+}
+
+message ExportParquetResponse {
+  int64 exported_count = 1;
+  OperationStatusMessage status = 2;
+}
+
+message ImportParquetRequest {
+  string parquet_file_path = 1;
+}
+
+message ImportParquetResponse {
+  OperationStatusMessage status = 1;
 }

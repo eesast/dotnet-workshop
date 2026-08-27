@@ -5,6 +5,8 @@ using LogAnalyzerRpc;
 using LogAnalyzerRpc.Protos;
 using LogParser.Visitors;
 using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
 
 namespace RemoteCli
 {
@@ -116,32 +118,151 @@ namespace RemoteCli
 
         private static async Task ShowLogFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var response = await client.GetLogFilesAsync(new Empty());
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                return;
+            }
+
+            if (response.FileNames.Count == 0)
+            {
+                Console.WriteLine("No log files found in the current directory.");
+                return;
+            }
+
+            Console.WriteLine("Log files in directory:");
+            foreach (var file in response.FileNames)
+            {
+                Console.WriteLine($"- {file}");
+            }
         }
 
         private static int ReadDegreeOfParallelism()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.WriteLine("Please input max degree of parallelism (0 for default):");
+            var input = Console.ReadLine();
+            if (int.TryParse(input, out int result) && result >= 0)
+            {
+                return result;
+            }
+            return 0;
         }
 
         private static List<string> ReadFileNames()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.WriteLine("Please input log file names separated by comma:");
+            var input = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                return new List<string>();
+            }
+
+            return input.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(f => f.Trim())
+                        .Where(f => !string.IsNullOrEmpty(f))
+                        .ToList();
         }
 
         private static async Task AnalyzeFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var fileNames = ReadFileNames();
+            if (fileNames.Count == 0)
+            {
+                Console.WriteLine("Input cannot be empty.");
+                return;
+            }
+
+            var parallelism = ReadDegreeOfParallelism();
+
+            Console.WriteLine("Analyzing specified files...");
+            var request = new AnalyzeFilesRequest
+            {
+                DegreeOfParallelism = parallelism
+            };
+            request.FileNames.AddRange(fileNames);
+
+            var response = await client.AnalyzeFilesAsync(request);
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Error analyzing files: {response.Status.Code}: {response.Status.Message}");
+            }
+            else
+            {
+                Console.WriteLine("Analysis completed.");
+            }
         }
 
         private static async Task AnalyzeAll(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var parallelism = ReadDegreeOfParallelism();
+
+            Console.WriteLine("Analyzing all log files...");
+            var request = new AnalyzeAllRequest
+            {
+                DegreeOfParallelism = parallelism
+            };
+
+            var response = await client.AnalyzeAllAsync(request);
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Error analyzing files: {response.Status.Code}: {response.Status.Message}");
+            }
+            else
+            {
+                Console.WriteLine("Analysis completed.");
+            }
         }
 
         private static async Task GetAnalysisResult(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.WriteLine("Please input log file name:");
+            var fileName = Console.ReadLine()?.Trim();
+            if (string.IsNullOrEmpty(fileName))
+            {
+                Console.WriteLine("Invalid file name.");
+                return;
+            }
+
+            var request = new GetAnalysisResultRequest
+            {
+                FileName = fileName
+            };
+
+            using var call = client.GetAnalysisResult(request);
+            await foreach (var response in call.ResponseStream.ReadAllAsync())
+            {
+                if (!response.Status.Success)
+                {
+                    Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                    return;
+                }
+
+                switch (response.PayloadCase)
+                {
+                    case GetAnalysisResultResponse.PayloadOneofCase.Header:
+                        var header = response.Header;
+                        switch (header.State)
+                        {
+                            case AnalysisStateEnum.NotAnalyzed:
+                                Console.WriteLine($"File '{fileName}' has not been analyzed yet.");
+                                break;
+                            case AnalysisStateEnum.Failed:
+                                Console.WriteLine($"Analysis failed for '{fileName}':");
+                                Console.WriteLine(header.ErrorMessage);
+                                break;
+                            case AnalysisStateEnum.Succeeded:
+                                Console.WriteLine($"Analysis result for '{fileName}':");
+                                break;
+                        }
+                        break;
+
+                    case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
+                        var entry = GrpcTypeConverter.ConvertFromGrpc(response.LogEntry);
+                        Console.WriteLine(entry);
+                        break;
+                }
+            }
         }
     }
 }
