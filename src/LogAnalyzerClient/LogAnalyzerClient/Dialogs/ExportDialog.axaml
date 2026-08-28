@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="LogAnalyzerClient.ExportDialog"
+        d:DesignWidth="480" d:DesignHeight="380"
+        Width="480" Height="380"
+        CanResize="False" WindowStartupLocation="CenterOwner"
+        Title="Export to Parquet">
+    <Grid Margin="15" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowSpacing="8">
+        <StackPanel Grid.Row="0" Spacing="4">
+            <TextBlock Classes="DialogTitle" Text="Export analysis result to a Parquet file" />
+            <TextBlock Classes="SubtleText" Name="SourceTextBlock" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Spacing="4">
+            <TextBlock Text="Output path" />
+            <TextBox Name="OutputPathTextBox"
+                     PlaceholderText="e.g. basic.parquet  (relative to the log dir) or an absolute path" />
+        </StackPanel>
+
+        <CheckBox Grid.Row="2" Name="OverwriteCheckBox" Content="Overwrite if the file already exists" />
+
+        <TextBlock Grid.Row="3"
+                   Classes="SubtleText"
+                   Text="A relative path or bare file name is resolved against the Agent's current log directory. After exporting, you can refresh and analyze the .parquet file to see Parquet support in action."
+                   TextWrapping="Wrap" />
+
+        <TextBlock Grid.Row="4"
+                   Name="ErrorTextBlock"
+                   Foreground="OrangeRed"
+                   VerticalAlignment="Top"
+                   TextWrapping="Wrap" />
+
+        <StackPanel Grid.Row="5"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    Spacing="5">
+            <Button Classes="PrimaryButton"
+                    Content="Export"
+                    IsDefault="True"
+                    Click="ExportButton_Click" />
+            <Button Classes="SecondaryButton"
+                    Content="Cancel"
+                    Click="CancelButton_Click" />
+        </StackPanel>
+    </Grid>
+</Window>

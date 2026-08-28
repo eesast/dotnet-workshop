@@ -1,0 +1,30 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="LogAnalyzerClient.TraceWindow"
+        d:DesignWidth="820" d:DesignHeight="560"
+        Width="820" Height="560"
+        CanResize="False" WindowStartupLocation="CenterOwner"
+        Title="Request Trace Waterfall">
+    <DockPanel Margin="15">
+        <TextBlock DockPanel.Dock="Top" Classes="DialogTitle" Name="HeaderTextBlock" />
+
+        <TextBlock DockPanel.Dock="Top"
+                   Classes="SubtleText"
+                   Text="Each bar is one service call along the request, laid out left-to-right by time; red bars are failed calls."
+                   TextWrapping="Wrap" />
+
+        <!-- Viewbox 等比缩放内部的 Canvas，保证横条相对位置不随窗口大小错位。 -->
+        <Border BorderThickness="1"
+                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                Background="{DynamicResource SystemControlBackgroundAltHighBrush}"
+                CornerRadius="8"
+                Margin="0,4,0,4">
+            <Viewbox Stretch="Uniform">
+                <Canvas Name="WaterfallCanvas" Width="780" Height="440" Background="Transparent" />
+            </Viewbox>
+        </Border>
+    </DockPanel>
+</Window>

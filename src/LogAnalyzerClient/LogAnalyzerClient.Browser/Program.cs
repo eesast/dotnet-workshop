@@ -1,5 +1,6 @@
 ﻿using Avalonia;
 using Avalonia.Browser;
+using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Web;
 using LogAnalyzerClient;
@@ -13,15 +14,16 @@ internal sealed partial class Program
 {
     internal class ClientFactory : IClientFactory
     {
-        public LogAnalyzerAgentServiceClient CreateClient(string address)
+        public AgentClientHandle CreateClient(string address, string token)
         {
             var handler = new GrpcWebHandler(GrpcWebMode.GrpcWeb, new HttpClientHandler());
             var channel = GrpcChannel.ForAddress(address, new GrpcChannelOptions()
                 {
                     HttpHandler = handler
                 });
-            var client = new LogAnalyzerAgentServiceClient(channel);
-            return client;
+            // 用拦截器把 token 附加到每一次 gRPC 调用，满足 Agent 端的鉴权要求（T5.1.a.b）。
+            var client = new LogAnalyzerAgentServiceClient(channel.Intercept(new TokenInterceptor(token)));
+            return new AgentClientHandle(client, channel);
         }
     }
 

@@ -15,6 +15,18 @@ service LogAnalyzerAgentService {
 	rpc AnalyzeAll(AnalyzeAllRequest) returns (AnalyzeAllResponse);
 	rpc AnalyzeFiles(AnalyzeFilesRequest) returns (AnalyzeFilesResponse);
 	rpc GetAnalysisResult(GetAnalysisResultRequest) returns (stream GetAnalysisResultResponse);
+	rpc QueryAnalysisResult(QueryAnalysisResultRequest) returns (stream GetAnalysisResultResponse);
+	rpc GetCallTopology(GetCallTopologyRequest) returns (GetCallTopologyResponse);
+	rpc GetEdgeCallLogs(GetEdgeCallLogsRequest) returns (stream GetAnalysisResultResponse);
+	// 按 Request ID 追踪某次请求的完整调用链（T5.2），流式返回该 request-id 的所有日志（按时间升序）。
+	rpc GetTrace(GetTraceRequest) returns (stream GetAnalysisResultResponse);
+	// 将某个已分析日志文件的结果导出为 Parquet 文件（T5.1.a.a）。
+	rpc ExportAnalysisResult(ExportAnalysisResultRequest) returns (ExportAnalysisResultResponse);
+	// —— Token 管理（T5.1.a.b，需管理员权限）——
+	rpc CreateToken(CreateTokenRequest) returns (CreateTokenResponse);
+	rpc DeleteToken(DeleteTokenRequest) returns (OperationStatusMessage);
+	rpc ListTokens(google.protobuf.Empty) returns (ListTokensResponse);
+	rpc SetTokenRole(SetTokenRoleRequest) returns (OperationStatusMessage);
 }
 
 enum AgentErrorCode {
@@ -149,4 +161,117 @@ message GetAnalysisResultResponse {
 		LogEntryMessage log_entry = 2;
 	}
 	OperationStatusMessage status = 3;
+}
+
+// 按条件查询某个日志文件的分析结果。
+// 所有的过滤条件均为可选；未填写的条件表示「不过滤该维度」。
+message QueryAnalysisResultRequest {
+  string file_name = 1;
+  // 限定日志事件类型（Call / Request / Internal）。为空表示不限定。
+  repeated LogEventTypeEnum event_types = 2;
+  // 限定日志等级（Info / Warning / Error）。为空表示不限定。
+  repeated LogSeverityEnum severities = 3;
+  // 按 Request ID 做子串匹配（大小写不敏感）。Internal 类型日志无 Request ID，填写后会被排除。为空表示不限定。
+  string request_id_pattern = 4;
+  // 按产生日志的服务（pod 名，如 gateway-0）做子串匹配（大小写不敏感）。填写 gateway 即可匹配所有 gateway-* 的日志。为空表示不限定。
+  string service_pattern = 5;
+  // 时间范围下界（含），UTC 时间戳。不设置表示不限定下界。
+  optional google.protobuf.Timestamp start_time = 6;
+  // 时间范围上界（含），UTC 时间戳。不设置表示不限定上界。
+  optional google.protobuf.Timestamp end_time = 7;
+}
+
+// 请求某个日志文件的云服务调用拓扑。
+message GetCallTopologyRequest {
+  string file_name = 1;
+}
+
+// 拓扑图中的一个结点，对应一个云服务。
+message TopologyNodeMessage {
+  string service = 1;
+}
+
+// 拓扑图中的一条有向边，表示 source_service 调用了 target_service。
+message TopologyEdgeMessage {
+  string source_service = 1;
+  string target_service = 2;
+  // 这条边对应的 Call 日志条数（用于前端展示，点击后再通过 GetEdgeCallLogs 拉取具体日志）。
+  int32 call_count = 3;
+}
+
+message GetCallTopologyResponse {
+  OperationStatusMessage status = 1;
+  string file_name = 2;
+  repeated TopologyNodeMessage nodes = 3;
+  repeated TopologyEdgeMessage edges = 4;
+}
+
+// 请求某条有向边对应的所有 Call 日志。
+message GetEdgeCallLogsRequest {
+  string file_name = 1;
+  string source_service = 2;
+  string target_service = 3;
+}
+
+// 请求某次请求（Request ID）的完整调用链日志（T5.2）。响应复用 stream GetAnalysisResultResponse。
+message GetTraceRequest {
+  string file_name = 1;
+  string request_id = 2;
+}
+
+// 将某个已分析日志文件的结果导出为 Parquet 文件（T5.1.a.a）。
+message ExportAnalysisResultRequest {
+  // 已分析成功的源日志文件名（位于 Agent 当前日志目录中）。
+  string file_name = 1;
+  // 输出 .parquet 的路径：可为绝对路径，或相对于当前日志目录的文件名/相对路径。
+  string output_path = 2;
+  // 目标文件已存在时是否覆盖；为 false 且文件存在则返回错误。
+  bool overwrite = 3;
+}
+
+message ExportAnalysisResultResponse {
+  OperationStatusMessage status = 1;
+  // 实际写入的绝对路径，回传便于客户端提示。
+  string written_path = 2;
+  // 写入的日志条目数。
+  int32 entry_count = 3;
+}
+
+// Token 权限等级（T5.1.a.b）。
+enum TokenRoleEnum {
+  TOKEN_NORMAL = 0;
+  TOKEN_ADMIN = 1;
+}
+
+// 一个 token 的信息。
+message TokenInfoMessage {
+  string token = 1;
+  TokenRoleEnum role = 2;
+  string note = 3;
+}
+
+message CreateTokenRequest {
+  TokenRoleEnum role = 1;
+  string note = 2;
+}
+
+message CreateTokenResponse {
+  OperationStatusMessage status = 1;
+  TokenInfoMessage token = 2;
+}
+
+message DeleteTokenRequest {
+  string token = 1;
+}
+
+message ListTokensResponse {
+  OperationStatusMessage status = 1;
+  repeated TokenInfoMessage tokens = 2;
+  // 当前调用者自身的 token，便于前端高亮「自己」。
+  string caller_token = 3;
+}
+
+message SetTokenRoleRequest {
+  string token = 1;
+  TokenRoleEnum role = 2;
 }

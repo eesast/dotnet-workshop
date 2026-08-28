@@ -4,9 +4,14 @@
                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                 xmlns:vm="using:LogAnalyzerClient.ViewModels"
                 xmlns:models="using:LogAnalyzerClient.Models"
+                xmlns:converters="using:LogAnalyzerClient.Converters"
                 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
                 x:Class="LogAnalyzerClient.Views.MainView"
                 x:DataType="vm:MainViewModel">
+    <UserControl.Resources>
+        <converters:SeverityToBrushConverter x:Key="SeverityToBrush" />
+    </UserControl.Resources>
+
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
 to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
@@ -18,6 +23,9 @@ to set the actual DataContext for runtime, set the DataContext property in code 
             <MenuItem Header="File(_F)">
                 <MenuItem Header="Connect...(_C)" Command="{Binding ConnectCommand}" />
                 <MenuItem Header="Refresh(_R)" Command="{Binding RefreshCommand}" />
+                <MenuItem Header="Manage Tokens...(_M)"
+                          Command="{Binding ManageTokensCommand}"
+                          IsVisible="{Binding IsAdmin, Mode=OneWay}" />
                 <Separator />
                 <MenuItem Header="Exit(_E)" Name="ExitMenuItem" Click="ExitMenuItem_Click" />
             </MenuItem>
@@ -31,6 +39,10 @@ to set the actual DataContext for runtime, set the DataContext property in code 
             <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
                 <TextBlock Text="[Status] " />
                 <TextBlock Text="{Binding ConnectStatus}" />
+                <TextBlock Text=" [Admin]"
+                           Foreground="OrangeRed"
+                           FontWeight="SemiBold"
+                           IsVisible="{Binding IsAdmin, Mode=OneWay}" />
                 <TextBlock Text="Agent address: " />
                 <TextBlock Text="{Binding CurrentAddress}" />
                 <TextBlock Text="; Current Directory: " />
@@ -79,7 +91,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                         <StackPanel DockPanel.Dock="Top" Spacing="8">
                             <TextBlock Classes="SectionTitle" Text="Log Files" />
                             <TextBlock Classes="SubtleText" Text="Supports multiple selection (hold Ctrl). Right-click to view analysis results for the currently selected files." TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                 <TextBlock Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Center" Text="DoP" />
                                 <TextBox Name="DegreeTextBox"
                                          Grid.Column="1"
@@ -88,8 +100,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                          PlaceholderText="Degree of Parallelism" />
                                 <TextBlock Grid.Column="2" Margin="10,0,5,0" VerticalAlignment="Center" Text="Analyze" />
                                 <Button Grid.Column="3" Content="Selected" Command="{Binding AnalyzeSelectedFilesCommand}" />
-                                <!-- TODO: T4.1 -->
-                                <!-- Add "All" button -->
+                                <Button Grid.Column="4" Margin="5,0,0,0" Content="All" Command="{Binding AnalyzeAllCommand}" />
                             </Grid>
                         </StackPanel>
 
@@ -105,6 +116,8 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                 <ContextMenu>
                                     <MenuItem Header="Analyze File(_A)" Command="{Binding AnalyzeRightClickedFileCommand}"/>
                                     <MenuItem Header="View Analysis Results(_V)" Command="{Binding GetAnalysisResultCommand}" />
+                                    <MenuItem Header="Show Call Topology(_T)" Command="{Binding ShowTopologyCommand}" />
+                                    <MenuItem Header="Export to Parquet(_P)" Command="{Binding ExportCommand}" />
                                 </ContextMenu>
                             </ListBox.ContextMenu>
                             <ListBox.ItemTemplate>
@@ -117,25 +130,84 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 </Border>
 
                 <Border Grid.Column="1" Classes="Card">
-                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
-                            <TextBlock Classes="SectionTitle" Text="Analysis Result" />
-                        </StackPanel>
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="5">
+                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
+                            <TextBlock Grid.Column="0" Classes="SectionTitle" VerticalAlignment="Center" Text="Analysis Result" />
+                            <Button Grid.Column="2"
+                                    Classes="SecondaryButton"
+                                    Content="Query..."
+                                    Command="{Binding QueryCommand}" />
+                            <Button Grid.Column="3"
+                                    Margin="5,0,0,0"
+                                    Classes="SecondaryButton"
+                                    Content="Show All"
+                                    IsVisible="{Binding IsResultFiltered, Mode=OneWay}"
+                                    Command="{Binding GetAnalysisResultCommand}" />
+                            <TextBlock Grid.Column="4" Margin="10,0,5,0" VerticalAlignment="Center" Text="Sort by" />
+                            <ComboBox Grid.Column="5"
+                                      MinWidth="130"
+                                      VerticalAlignment="Center"
+                                      ItemsSource="{Binding SortKeys, Mode=OneWay}"
+                                      SelectedItem="{Binding SelectedSortKey, Mode=TwoWay}" />
+                            <CheckBox Grid.Column="6"
+                                      Margin="10,0,0,0"
+                                      VerticalAlignment="Center"
+                                      Content="Descending"
+                                      IsChecked="{Binding IsSortDescending, Mode=TwoWay}" />
+                        </Grid>
 
                         <TextBlock Grid.Row="1"
                                    Classes="SubtleText"
-                                   Text="Analysis results. Each line is a single log entry."
+                                   Text="Analysis results shown as a table; the Severity cell is color-coded (Info = blue, Warning = orange, Error = red)."
                                    TextWrapping="Wrap" />
 
-                        <ListBox Name="ResultEntryListBox"
-                                Grid.Row="2"
-                                ItemsSource="{Binding ResultEntries, Mode=OneWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                        <TextBlock Grid.Row="2"
+                                   Classes="SubtleText"
+                                   Text="Tip: use Query... to filter by event type / severity / service / request id / time range; change the sort key / direction to re-sort."
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="3"
+                                   Classes="SubtleText"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding ResultStatusText, Mode=OneWay}" />
+
+                        <DataGrid Name="ResultEntryGrid"
+                                  Grid.Row="4"
+                                  ItemsSource="{Binding ResultEntries, Mode=OneWay}"
+                                  SelectedItem="{Binding SelectedResultEntry, Mode=OneWayToSource}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserSortColumns="False"
+                                  GridLinesVisibility="Horizontal"
+                                  BorderThickness="1"
+                                  BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                            <DataGrid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="View Trace for this Request(_R)" Command="{Binding ShowTraceCommand}" />
+                                </ContextMenu>
+                            </DataGrid.ContextMenu>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="#" Binding="{Binding LineNo}" />
+                                <DataGridTextColumn Header="Time" Binding="{Binding Time}" />
+                                <DataGridTemplateColumn Header="Severity">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogEntryRowVm">
+                                            <Border CornerRadius="6"
+                                                    Padding="8,2"
+                                                    HorizontalAlignment="Left"
+                                                    Background="{Binding Severity, Converter={StaticResource SeverityToBrush}}">
+                                                <TextBlock Text="{Binding Severity}"
+                                                           Foreground="White"
+                                                           FontWeight="SemiBold" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Service" Binding="{Binding Service}" />
+                                <DataGridTextColumn Header="Type" Binding="{Binding EventType}" />
+                                <DataGridTextColumn Header="Detail" Binding="{Binding Detail}" Width="*" />
+                            </DataGrid.Columns>
+                        </DataGrid>
                     </Grid>
                 </Border>
             </Grid>
