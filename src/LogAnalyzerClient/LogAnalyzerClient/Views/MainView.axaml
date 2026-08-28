@@ -116,25 +116,94 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 </Border>
 
                 <Border Grid.Column="1" Classes="Card">
-                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="6">
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
-                            <TextBlock Classes="SectionTitle" Text="Analysis Result" />
+                            <TextBlock Classes="SectionTitle" Text="Analysis Result" VerticalAlignment="Center" />
+                            <Button Classes="SecondaryButton" Content="Statistics" Command="{Binding GetStatisticsCommand}" />
                         </StackPanel>
 
                         <TextBlock Grid.Row="1"
                                    Classes="SubtleText"
-                                   Text="Analysis results. Each line is a single log entry."
+                                   Text="Right-click a file and choose View Analysis Results, or use the query panel below."
                                    TextWrapping="Wrap" />
 
-                        <ListBox Name="ResultEntryListBox"
-                                Grid.Row="2"
-                                ItemsSource="{Binding ResultEntries, Mode=OneWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                        <Border Grid.Row="2"
+                                Padding="8"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
+                            <Grid RowDefinitions="Auto,Auto" ColumnSpacing="6" RowSpacing="4">
+                                <Grid Grid.Row="0" ColumnDefinitions="Auto,90,Auto,90,Auto,110,Auto,*">
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Event" />
+                                    <ComboBox Grid.Column="1" ItemsSource="{Binding EventTypeOptions}" SelectedItem="{Binding QueryEventType}" />
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="Severity" />
+                                    <ComboBox Grid.Column="3" ItemsSource="{Binding SeverityOptions}" SelectedItem="{Binding QuerySeverity}" />
+                                    <TextBlock Grid.Column="4" VerticalAlignment="Center" Text="Service" />
+                                    <TextBox Grid.Column="5" Text="{Binding QueryService}" />
+                                    <TextBlock Grid.Column="6" VerticalAlignment="Center" Text="RequestId" />
+                                    <TextBox Grid.Column="7" Text="{Binding QueryRequestId}" />
+                                </Grid>
+                                <Grid Grid.Row="1" ColumnDefinitions="Auto,110,Auto,110,Auto,90,Auto,Auto,Auto">
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Start" />
+                                    <TextBox Grid.Column="1" Text="{Binding QueryStartTime}" />
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="End" />
+                                    <TextBox Grid.Column="3" Text="{Binding QueryEndTime}" />
+                                    <TextBlock Grid.Column="4" VerticalAlignment="Center" Text="Sort" />
+                                    <ComboBox Grid.Column="5" ItemsSource="{Binding SortByOptions}" SelectedItem="{Binding SortBy}" />
+                                    <CheckBox Grid.Column="6" Content="Asc" IsChecked="{Binding SortAscending}" VerticalAlignment="Center" />
+                                    <Button Grid.Column="7" Content="Query" Command="{Binding QueryCommand}" />
+                                    <Button Grid.Column="8" Content="Clear" Command="{Binding ClearQueryCommand}" />
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Grid.Row="3"
+                                   Classes="SubtleText"
+                                   Text="{Binding ResultMessage}"
+                                   TextWrapping="Wrap" />
+
+                        <ScrollViewer Grid.Row="4" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                            <StackPanel>
+                                <Grid ColumnDefinitions="50,180,120,76,76,300,110,80,70,170,80,200,220">
+                                    <TextBlock Grid.Column="0" Text="LineNo" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="1" Text="Timestamp" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="2" Text="PodName" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="3" Text="Severity" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="4" Text="EventType" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="5" Text="RequestId" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="6" Text="TargetService" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="7" Text="DurationMs" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="8" Text="Method" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="9" Text="Path" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="10" Text="StatusCode" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="11" Text="ExceptionName" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="12" Text="ExceptionMessage" FontWeight="SemiBold" />
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding ResultEntries}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:LogEntryRow">
+                                            <Grid ColumnDefinitions="50,180,120,76,76,300,110,80,70,170,80,200,220">
+                                                <TextBlock Grid.Column="0" Text="{Binding LineNo}" />
+                                                <TextBlock Grid.Column="1" Text="{Binding Timestamp}" />
+                                                <TextBlock Grid.Column="2" Text="{Binding PodName}" />
+                                                <Border Grid.Column="3" Classes="severityBadge" Background="{Binding SeverityBrush}">
+                                                    <TextBlock Text="{Binding Severity}" Foreground="White" />
+                                                </Border>
+                                                <TextBlock Grid.Column="4" Text="{Binding EventType}" />
+                                                <TextBlock Grid.Column="5" Text="{Binding RequestId}" />
+                                                <TextBlock Grid.Column="6" Text="{Binding TargetService}" />
+                                                <TextBlock Grid.Column="7" Text="{Binding DurationMs}" />
+                                                <TextBlock Grid.Column="8" Text="{Binding Method}" />
+                                                <TextBlock Grid.Column="9" Text="{Binding Path}" />
+                                                <TextBlock Grid.Column="10" Text="{Binding StatusCode}" />
+                                                <TextBlock Grid.Column="11" Text="{Binding ExceptionName}" />
+                                                <TextBlock Grid.Column="12" Text="{Binding ExceptionMessage}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
                     </Grid>
                 </Border>
             </Grid>

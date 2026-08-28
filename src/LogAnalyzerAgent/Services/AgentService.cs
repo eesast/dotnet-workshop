@@ -55,5 +55,15 @@ namespace LogAnalyzerAgent.Services
                 await responseStream.WriteAsync(response);
             }
         }
+
+        public override Task<QueryLogEntriesResponse> QueryLogEntries(QueryLogEntriesRequest request, ServerCallContext context)
+        {
+            return _session.QueryLogEntries(request, context.CancellationToken);
+        }
+
+        public override Task<GetStatisticsResponse> GetStatistics(GetStatisticsRequest request, ServerCallContext context)
+        {
+            return _session.GetStatistics(request, context.CancellationToken);
+        }
     }
 }
