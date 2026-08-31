@@ -12,7 +12,6 @@
     <Style Selector="TextBlock.SectionTitle">
         <Setter Property="FontSize" Value="16" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Margin" Value="0,0,0,8" />
     </Style>
 
     <Style Selector="TextBlock.SubtleText">
@@ -24,27 +23,130 @@
         <Setter Property="FontWeight" Value="SemiBold" />
     </Style>
 
-    <Style Selector="Border.Card">
-        <Setter Property="CornerRadius" Value="10" />
-        <Setter Property="Padding" Value="14" />
-        <Setter Property="Margin" Value="0" />
+    <Style Selector="Border.Panel">
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="12" />
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
         <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
     </Style>
 
+    <Style Selector="Border.StatusBar">
+        <Setter Property="Padding" Value="10,7" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundAltHighBrush}" />
+    </Style>
+
     <Style Selector="Button.PrimaryButton">
-        <Setter Property="MinWidth" Value="96" />
-        <Setter Property="Padding" Value="14,8" />
+        <Setter Property="MinWidth" Value="82" />
+        <Setter Property="Padding" Value="12,7" />
     </Style>
 
     <Style Selector="Button.SecondaryButton">
-        <Setter Property="MinWidth" Value="96" />
-        <Setter Property="Padding" Value="14,8" />
+        <Setter Property="MinWidth" Value="76" />
+        <Setter Property="Padding" Value="12,7" />
     </Style>
 
     <Style Selector="TextBox.NumericInput">
         <Setter Property="MinWidth" Value="30" />
         <Setter Property="HorizontalContentAlignment" Value="Right" />
+    </Style>
+
+    <Style Selector="ComboBox.FilterControl, TextBox.FilterControl">
+        <Setter Property="Margin" Value="0,0,8,8" />
+    </Style>
+
+    <Style Selector="TextBlock.DateLabel">
+        <Setter Property="Margin" Value="0,0,6,8" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="CalendarDatePicker.DateControl, TimePicker.DateControl">
+        <Setter Property="Margin" Value="0,0,8,8" />
+    </Style>
+
+    <Style Selector="Button.FilterAction">
+        <Setter Property="Margin" Value="0,0,8,8" />
+    </Style>
+
+    <Style Selector="Border.ResultMessage">
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Padding" Value="10" />
+        <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
+    </Style>
+
+    <Style Selector="Border.TableHeader">
+        <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundBaseLowBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+    </Style>
+
+    <Style Selector="Button.ColumnHeader">
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Padding" Value="8,7" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="TextBlock.ColumnHeaderText">
+        <Setter Property="Padding" Value="8,7" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="ListBox.ResultTable">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.ResultTable > ListBoxItem">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="MinHeight" Value="34" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.TableCell">
+        <Setter Property="Padding" Value="8,7" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="TextBlock.Monospace">
+        <Setter Property="FontFamily" Value="Cascadia Mono,Consolas,monospace" />
+        <Setter Property="FontSize" Value="12" />
+    </Style>
+
+    <Style Selector="Border.SeverityBadge">
+        <Setter Property="CornerRadius" Value="4" />
+        <Setter Property="Margin" Value="7,5" />
+        <Setter Property="Padding" Value="7,2" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Border.SeverityBadge.info">
+        <Setter Property="Background" Value="#D9EAFF" />
+        <Setter Property="TextElement.Foreground" Value="#0A4B78" />
+    </Style>
+
+    <Style Selector="Border.SeverityBadge.warning">
+        <Setter Property="Background" Value="#FFE6A3" />
+        <Setter Property="TextElement.Foreground" Value="#714400" />
+    </Style>
+
+    <Style Selector="Border.SeverityBadge.error">
+        <Setter Property="Background" Value="#FFDAD6" />
+        <Setter Property="TextElement.Foreground" Value="#8A1C13" />
+    </Style>
+
+    <Style Selector="Button.IconButton">
+        <Setter Property="Width" Value="32" />
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="FontWeight" Value="Bold" />
     </Style>
 </Styles>

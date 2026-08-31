@@ -1,15 +1,15 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                xmlns:vm="using:LogAnalyzerClient.ViewModels"
-                xmlns:models="using:LogAnalyzerClient.Models"
-                mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-                x:Class="LogAnalyzerClient.Views.MainView"
-                x:DataType="vm:MainViewModel">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LogAnalyzerClient.ViewModels"
+             xmlns:models="using:LogAnalyzerClient.Models"
+             mc:Ignorable="d"
+             d:DesignWidth="1280"
+             d:DesignHeight="760"
+             x:Class="LogAnalyzerClient.Views.MainView"
+             x:DataType="vm:MainViewModel">
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
 
@@ -24,118 +24,253 @@ to set the actual DataContext for runtime, set the DataContext property in code 
             <MenuItem Header="About(_A)" Command="{Binding AboutCommand}" />
         </Menu>
 
-        <Border DockPanel.Dock="Bottom"
-                Padding="10"
-                BorderThickness="1,1,0,0"
-                BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-            <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
-                <TextBlock Text="[Status] " />
-                <TextBlock Text="{Binding ConnectStatus}" />
-                <TextBlock Text="Agent address: " />
-                <TextBlock Text="{Binding CurrentAddress}" />
-                <TextBlock Text="; Current Directory: " />
-                <TextBlock Text="{Binding DirectoryPath}" />
-            </StackPanel>
+        <Border DockPanel.Dock="Bottom" Classes="StatusBar">
+            <Grid ColumnDefinitions="Auto,Auto,20,Auto,*" ColumnSpacing="6">
+                <TextBlock Grid.Column="0" Text="Status" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="1" Text="{Binding ConnectStatus}" />
+                <TextBlock Grid.Column="3" Text="Directory" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="4" Text="{Binding CurrentDirectory}" TextTrimming="CharacterEllipsis" />
+            </Grid>
         </Border>
 
-        <Grid Margin="16" RowSpacing="10">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
+        <Grid Margin="16" RowDefinitions="Auto,*" RowSpacing="12">
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*" ColumnSpacing="20">
+                <StackPanel Grid.Column="0" Spacing="2">
+                    <TextBlock Classes="TitleText" Text="Log Analyzer" />
+                    <TextBlock Classes="SubtleText" Text="{Binding CurrentAddress}" />
+                </StackPanel>
 
-            <StackPanel
-                Grid.Row="0"
-                Grid.Column="0"
-                Spacing="4"
-            >
-                <TextBlock Classes="TitleText" Text="LogAnalyzerClient" />
-                <TextBlock Classes="SubtleText" Text="GUI remote client of LogAnalyzer." />
-            </StackPanel>
-
-            <Border
-                Grid.Row="1"
-                Grid.Column="0"
-                Classes="Card"
-            >
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="5" RowSpacing="5">
-                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Directory Path" />
-                    <TextBox Grid.Row="0" Grid.Column="1"
-                             Text="{Binding DirectoryPath, Mode=OneWayToSource}"
-                             PlaceholderText="Input the directory path on the node" />
-                    <Button Grid.Row="0" Grid.Column="2" Classes="SecondaryButton" Content="Change Directory" Command="{Binding ChangeDirectoryCommand}" />
-                    <Button Grid.Row="0" Grid.Column="3" Classes="SecondaryButton" Content="Refresh" Command="{Binding RefreshCommand}" />
+                <Grid Grid.Column="1" ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+                    <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Log directory" />
+                    <TextBox Grid.Column="1"
+                             Text="{Binding DirectoryPath, Mode=TwoWay}"
+                             PlaceholderText="Directory path on the agent" />
+                    <Button Grid.Column="2"
+                            Classes="SecondaryButton"
+                            Content="Browse..."
+                            ToolTip.Tip="Choose a folder on this computer"
+                            Click="BrowseDirectoryButton_Click" />
+                    <Button Grid.Column="3"
+                            Classes="SecondaryButton"
+                            Content="Change"
+                            Command="{Binding ChangeDirectoryCommand}" />
+                    <Button Grid.Column="4"
+                            Classes="SecondaryButton"
+                            Content="Refresh"
+                            Command="{Binding RefreshCommand}" />
                 </Grid>
-            </Border>
+            </Grid>
 
-            <Grid Grid.Row="2" Margin="0,10,0,10" ColumnSpacing="15">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="2*" MaxWidth="360" MinWidth="50" />
-                    <ColumnDefinition Width="3*" />
-                </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Classes="Card">
-                    <DockPanel>
-                        <StackPanel DockPanel.Dock="Top" Spacing="8">
-                            <TextBlock Classes="SectionTitle" Text="Log Files" />
-                            <TextBlock Classes="SubtleText" Text="Supports multiple selection (hold Ctrl). Right-click to view analysis results for the currently selected files." TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                                <TextBlock Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Center" Text="DoP" />
-                                <TextBox Name="DegreeTextBox"
-                                         Grid.Column="1"
+            <Grid Grid.Row="1" ColumnDefinitions="340,*" ColumnSpacing="12">
+                <Border Grid.Column="0" Classes="Panel">
+                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                        <TextBlock Grid.Row="0" Classes="SectionTitle" Text="Log Files" />
+                        <Grid Grid.Row="1" RowDefinitions="Auto,Auto" RowSpacing="8">
+                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*" ColumnSpacing="8">
+                                <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Parallelism" />
+                                <TextBox Grid.Column="1"
                                          Classes="NumericInput"
                                          Text="{Binding DegreeOfParallelismText}"
-                                         PlaceholderText="Degree of Parallelism" />
-                                <TextBlock Grid.Column="2" Margin="10,0,5,0" VerticalAlignment="Center" Text="Analyze" />
-                                <Button Grid.Column="3" Content="Selected" Command="{Binding AnalyzeSelectedFilesCommand}" />
-                                <!-- TODO: T4.1 -->
-                                <!-- Add "All" button -->
+                                         PlaceholderText="1" />
                             </Grid>
-                        </StackPanel>
+                            <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8">
+                                <Button Grid.Column="0"
+                                        Content="Analyze selected"
+                                        Command="{Binding AnalyzeSelectedFilesCommand}" />
+                                <Button Grid.Column="1"
+                                        Content="Analyze all"
+                                        Command="{Binding AnalyzeAllCommand}" />
+                            </Grid>
+                        </Grid>
 
-                        <ListBox Name="LogFileListBox"
+                        <ListBox Grid.Row="2"
+                                 Name="LogFileListBox"
                                  Classes="FileList"
-                                 Margin="0,12,0,0"
                                  ItemsSource="{Binding LogFiles, Mode=OneWay}"
                                  SelectedItem="{Binding SelectedLogFile, Mode=OneWayToSource}"
                                  SelectionMode="Multiple"
-                                 SelectionChanged="LogFileListBox_SelectionChanged"
-                                 >
+                                 SelectionChanged="LogFileListBox_SelectionChanged">
                             <ListBox.ContextMenu>
                                 <ContextMenu>
-                                    <MenuItem Header="Analyze File(_A)" Command="{Binding AnalyzeRightClickedFileCommand}"/>
-                                    <MenuItem Header="View Analysis Results(_V)" Command="{Binding GetAnalysisResultCommand}" />
+                                    <MenuItem Header="Analyze file(_A)" Command="{Binding AnalyzeRightClickedFileCommand}" />
+                                    <MenuItem Header="View results(_V)" Command="{Binding GetAnalysisResultCommand}" />
                                 </ContextMenu>
                             </ListBox.ContextMenu>
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="models:LogFileItem">
-                                    <TextBlock Text="{Binding FileName, Mode=OneWay}" />
+                                    <TextBlock Text="{Binding FileName}" TextTrimming="CharacterEllipsis" />
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                         </ListBox>
-                    </DockPanel>
+                    </Grid>
                 </Border>
 
-                <Border Grid.Column="1" Classes="Card">
-                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
-                            <TextBlock Classes="SectionTitle" Text="Analysis Result" />
-                        </StackPanel>
+                <Border Grid.Column="1" Classes="Panel">
+                    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+                        <Grid Grid.Row="0" RowDefinitions="Auto,Auto,Auto" RowSpacing="8">
+                            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <StackPanel Grid.Column="0" Spacing="2">
+                                    <TextBlock Classes="SectionTitle" Text="{Binding ResultTitle}" />
+                                    <TextBlock Classes="SubtleText" Text="{Binding ResultSummary}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                                    <TextBlock VerticalAlignment="Center" Text="Rows" />
+                                    <ComboBox Width="72"
+                                              ItemsSource="{Binding PageSizeOptions}"
+                                              SelectedItem="{Binding SelectedPageSize}" />
+                                </StackPanel>
+                            </Grid>
 
-                        <TextBlock Grid.Row="1"
-                                   Classes="SubtleText"
-                                   Text="Analysis results. Each line is a single log entry."
-                                   TextWrapping="Wrap" />
+                            <WrapPanel Grid.Row="1" Orientation="Horizontal">
+                                <ComboBox Classes="FilterControl"
+                                          Width="145"
+                                          ItemsSource="{Binding EventTypeFilters}"
+                                          SelectedItem="{Binding SelectedEventTypeFilter}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:FilterOption">
+                                            <TextBlock Text="{Binding Label}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <ComboBox Classes="FilterControl"
+                                          Width="145"
+                                          ItemsSource="{Binding SeverityFilters}"
+                                          SelectedItem="{Binding SelectedSeverityFilter}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:FilterOption">
+                                            <TextBlock Text="{Binding Label}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <ComboBox Classes="FilterControl"
+                                          Width="160"
+                                          ItemsSource="{Binding ServiceFilters}"
+                                          SelectedItem="{Binding SelectedServiceFilter}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:FilterOption">
+                                            <TextBlock Text="{Binding Label}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBox Classes="FilterControl"
+                                         Width="230"
+                                         Text="{Binding RequestIdFilter}"
+                                         PlaceholderText="Request ID" />
+                                <TextBox Classes="FilterControl"
+                                         Width="190"
+                                         Text="{Binding SearchText}"
+                                         PlaceholderText="Search all fields" />
+                            </WrapPanel>
 
-                        <ListBox Name="ResultEntryListBox"
-                                Grid.Row="2"
-                                ItemsSource="{Binding ResultEntries, Mode=OneWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                            <WrapPanel Grid.Row="2" Orientation="Horizontal">
+                                <TextBlock Classes="DateLabel" Text="From" />
+                                <CalendarDatePicker Classes="DateControl"
+                                                    Width="145"
+                                                    SelectedDate="{Binding StartDate}" />
+                                <TimePicker Classes="DateControl"
+                                            Width="115"
+                                            ClockIdentifier="24HourClock"
+                                            MinuteIncrement="1"
+                                            SelectedTime="{Binding StartTime}" />
+                                <TextBlock Classes="DateLabel" Text="To" />
+                                <CalendarDatePicker Classes="DateControl"
+                                                    Width="145"
+                                                    SelectedDate="{Binding EndDate}" />
+                                <TimePicker Classes="DateControl"
+                                            Width="115"
+                                            ClockIdentifier="24HourClock"
+                                            MinuteIncrement="1"
+                                            SelectedTime="{Binding EndTime}" />
+                                <Button Classes="SecondaryButton FilterAction"
+                                        Content="Reset"
+                                        Command="{Binding ResetFiltersCommand}" />
+                                <Button Classes="PrimaryButton FilterAction"
+                                        Content="Apply"
+                                        Command="{Binding GetAnalysisResultCommand}" />
+                            </WrapPanel>
+                        </Grid>
+
+                        <Border Grid.Row="1" Classes="ResultMessage" IsVisible="{Binding IsResultMessageVisible}">
+                            <TextBlock Text="{Binding ResultMessage}" TextWrapping="Wrap" />
+                        </Border>
+
+                        <ScrollViewer Grid.Row="2"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled">
+                            <Grid Width="2040" RowDefinitions="Auto,*">
+                                <Border Grid.Row="0" Classes="TableHeader">
+                                    <Grid ColumnDefinitions="72,210,140,105,100,280,140,95,90,240,85,180,303">
+                                        <Button Grid.Column="0" Classes="ColumnHeader" Content="Line" Command="{Binding ChangeSortCommand}" CommandParameter="LineNo" />
+                                        <Button Grid.Column="1" Classes="ColumnHeader" Content="Timestamp" Command="{Binding ChangeSortCommand}" CommandParameter="Timestamp" />
+                                        <Button Grid.Column="2" Classes="ColumnHeader" Content="Service / pod" Command="{Binding ChangeSortCommand}" CommandParameter="PodName" />
+                                        <Button Grid.Column="3" Classes="ColumnHeader" Content="Severity" Command="{Binding ChangeSortCommand}" CommandParameter="Severity" />
+                                        <Button Grid.Column="4" Classes="ColumnHeader" Content="Type" Command="{Binding ChangeSortCommand}" CommandParameter="EventType" />
+                                        <Button Grid.Column="5" Classes="ColumnHeader" Content="Request ID" Command="{Binding ChangeSortCommand}" CommandParameter="RequestId" />
+                                        <TextBlock Grid.Column="6" Classes="ColumnHeaderText" Text="Target service" />
+                                        <TextBlock Grid.Column="7" Classes="ColumnHeaderText" Text="Duration (ms)" />
+                                        <TextBlock Grid.Column="8" Classes="ColumnHeaderText" Text="Method" />
+                                        <TextBlock Grid.Column="9" Classes="ColumnHeaderText" Text="Path" />
+                                        <TextBlock Grid.Column="10" Classes="ColumnHeaderText" Text="Status" />
+                                        <TextBlock Grid.Column="11" Classes="ColumnHeaderText" Text="Exception" />
+                                        <TextBlock Grid.Column="12" Classes="ColumnHeaderText" Text="Message" />
+                                    </Grid>
+                                </Border>
+
+                                <ListBox Grid.Row="1"
+                                         Classes="ResultTable"
+                                         ItemsSource="{Binding ResultEntries}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <Grid ColumnDefinitions="72,210,140,105,100,280,140,95,90,240,85,180,303">
+                                                <TextBlock Grid.Column="0" Classes="TableCell" Text="{Binding LineNo}" />
+                                                <TextBlock Grid.Column="1" Classes="TableCell" Text="{Binding Timestamp}" />
+                                                <TextBlock Grid.Column="2" Classes="TableCell" Text="{Binding PodName}" />
+                                                <Border Grid.Column="3"
+                                                        Classes="SeverityBadge"
+                                                        Classes.info="{Binding IsInfo}"
+                                                        Classes.warning="{Binding IsWarning}"
+                                                        Classes.error="{Binding IsError}">
+                                                    <TextBlock Text="{Binding SeverityText}" />
+                                                </Border>
+                                                <TextBlock Grid.Column="4" Classes="TableCell" Text="{Binding EventType}" />
+                                                <TextBlock Grid.Column="5" Classes="TableCell Monospace" Text="{Binding RequestId}" />
+                                                <TextBlock Grid.Column="6" Classes="TableCell" Text="{Binding TargetService}" />
+                                                <TextBlock Grid.Column="7" Classes="TableCell" Text="{Binding DurationMs}" />
+                                                <TextBlock Grid.Column="8" Classes="TableCell" Text="{Binding Method}" />
+                                                <TextBlock Grid.Column="9" Classes="TableCell Monospace" Text="{Binding Path}" />
+                                                <TextBlock Grid.Column="10" Classes="TableCell" Text="{Binding StatusCode}" />
+                                                <TextBlock Grid.Column="11" Classes="TableCell" Text="{Binding ExceptionName}" />
+                                                <TextBlock Grid.Column="12" Classes="TableCell" Text="{Binding ExceptionMessage}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </ScrollViewer>
+
+                        <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="8">
+                            <TextBlock Grid.Column="0"
+                                       VerticalAlignment="Center"
+                                       Classes="SubtleText"
+                                       Text="{Binding SortDescription}" />
+                            <Button Grid.Column="1"
+                                    Classes="IconButton"
+                                    Content="&lt;"
+                                    ToolTip.Tip="Previous page"
+                                    IsEnabled="{Binding CanGoToPreviousPage}"
+                                    Command="{Binding PreviousPageCommand}" />
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center">
+                                <Run Text="{Binding CurrentPage}" />
+                                <Run Text=" / " />
+                                <Run Text="{Binding TotalPages}" />
+                            </TextBlock>
+                            <Button Grid.Column="3"
+                                    Classes="IconButton"
+                                    Content="&gt;"
+                                    ToolTip.Tip="Next page"
+                                    IsEnabled="{Binding CanGoToNextPage}"
+                                    Command="{Binding NextPageCommand}" />
+                        </Grid>
                     </Grid>
                 </Border>
             </Grid>
