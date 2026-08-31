@@ -1,7 +1,10 @@
-﻿using LogParser.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using LogParser.Models;
 using LogParser.Parser;
-using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.X509Certificates;
 
 namespace LogAnalyzer
 {
@@ -15,6 +18,7 @@ namespace LogAnalyzer
 
         public string? CurrentDirectory => _currentDirectory;
         public bool HasDirectory => _currentDirectory is not null;
+
         public bool IsAnalyzing
         {
             get
@@ -67,7 +71,7 @@ namespace LogAnalyzer
                         .OrderBy(fileName => fileName);
                     foreach (var fileName in logFiles)
                     {
-                        _logFiles.Add(fileName, new FileInfo(Path.Join(_currentDirectory, fileName)));
+                        _logFiles.Add(fileName, new FileInfo(Path.Combine(directoryPath, fileName)));
                         _analysisResults.Add(fileName, new AnalysisResult(
                             FileName: fileName,
                             FullName: _logFiles[fileName].FullName,
@@ -138,10 +142,7 @@ namespace LogAnalyzer
                 }
                 fileList = fileNameList.Select(fileName => _logFiles[fileName]).ToList();
 
-                /*
-                 * Set _isAnalyzing
-                 */
-                // TODO: T2.2
+                _isAnalyzing = true;
             }
 
             try
@@ -150,11 +151,10 @@ namespace LogAnalyzer
             }
             finally
             {
-                /*
-                 * Unset _isAnalyzing
-                 * Remember to lock _syncRoot to prevent data race
-                 */
-                // TODO: T2.2
+                lock (_syncRoot)
+                {
+                    _isAnalyzing = false;
+                }
             }
         }
 
@@ -165,11 +165,14 @@ namespace LogAnalyzer
             {
                 foreach (var file in fileList)
                 {
-                    /*
-                     * Filter unparsed files.
-                     * If there is an unknown file, throw System.InvalidOperationException.
-                     */
-                    throw new NotImplementedException("TODO: T2.2");
+                    if (!_analysisResults.TryGetValue(file.Name, out var result))
+                    {
+                        throw new InvalidOperationException($"Unknown log file: {file.Name}");
+                    }
+                    if (result.State == AnalysisState.NotAnalyzed)
+                    {
+                        logFilesToParse.Add(file);
+                    }
                 }
             }
 
@@ -180,10 +183,11 @@ namespace LogAnalyzer
 
             var queue = new WorkQueue<FileInfo>();
 
-            /*
-             * Enqueue log files
-             */
-            // TODO: T2.2
+            foreach (var file in logFilesToParse)
+            {
+                queue.Enqueue(file);
+            }
+            queue.CompleteAdding();
 
             degreeOfParallelism = Math.Max(Math.Min(degreeOfParallelism, logFilesToParse.Count), 1);
             var workers = new Thread[degreeOfParallelism];
@@ -191,16 +195,17 @@ namespace LogAnalyzer
             {
                 int workerId = i;
                 string threadName = $"log-analyzer-worker-{workerId}";
-                /*
-                 * Create and start threads to run `WorkerMain`
-                 */
-                // TODO: T2.2
+                workers[i] = new Thread(() => WorkerMain(workerId, queue))
+                {
+                    Name = threadName,
+                    IsBackground = true
+                };
+                workers[i].Start();
             }
-
-            /*
-             * Wait for (join) all threads to end
-             */
-            // TODO: T2.2
+            foreach (var worker in workers)
+            {
+                worker.Join();
+            }
         }
 
         private void WorkerMain(int workerId, WorkQueue<FileInfo> queue)
@@ -212,20 +217,34 @@ namespace LogAnalyzer
                 AnalysisResult result;
                 try
                 {
-                    // Parse file
-                    throw new NotImplementedException("TODO: T2.2");
+                    using var streamReader = new StreamReader(file.FullName);
+                    var entries = parser.Parse(streamReader);
+
+                    result = new AnalysisResult(
+                        FileName: file.Name,
+                        FullName: file.FullName,
+                        State: AnalysisState.Succeeded,
+                        Entries: entries.ToList(),
+                        ErrorMessage: null,
+                        WorkerId: workerId
+                    );
                 }
                 catch (Exception ex)
                 {
-                    // Save exception message to result
-                    throw new NotImplementedException("TODO: T2.2");
+                    result = new AnalysisResult(
+                        FileName: file.Name,
+                        FullName: file.FullName,
+                        State: AnalysisState.Failed,
+                        Entries: Array.Empty<LogEntry>(),
+                        ErrorMessage: ex.Message,
+                        WorkerId: workerId
+                    );
                 }
 
-                /*
-                 * Save parse result.
-                 * [!Important] Remember to lock _syncRoot to prevent data race.
-                 */
-                throw new NotImplementedException("TODO: T2.2");
+                lock (_syncRoot)
+                {
+                    _analysisResults[file.Name] = result;
+                }
             }
         }
     }
