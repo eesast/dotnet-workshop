@@ -294,5 +294,96 @@ namespace LogAnalyzerAgent.Applications
             }
             return responses;
         }
+
+        public IReadOnlyList<QueryAnalysisResultResponse> QueryAnalysisResult(
+            QueryAnalysisResultRequest request,
+            CancellationToken cancellationToken)
+        {
+            var responses = new List<QueryAnalysisResultResponse>();
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!_analyzer.TryGetAnalysisResult(request.FileName, out var result) || result is null)
+                {
+                    responses.Add(new QueryAnalysisResultResponse
+                    {
+                        Status = CreateErrorOperationStatus(
+                            AgentErrorCode.FileNotFound,
+                            $"File not found: {request.FileName}")
+                    });
+                    return responses;
+                }
+
+                var queryResult = result.State == AnalysisState.Succeeded
+                    ? LogEntryQuery.Execute(result.Entries, request)
+                    : new LogEntryQueryResult([], 0, request.PageNumber, request.PageSize, 0, 0, 0);
+
+                var queryHeader = new QueryAnalysisResultHeaderMessage
+                {
+                    Analysis = new AnalysisResultHeaderMessage
+                    {
+                        FileName = result.FileName,
+                        FullName = result.FullName,
+                        State = GrpcTypeConverter.ConvertToGrpc(result.State),
+                        ErrorMessage = result.ErrorMessage ?? "",
+                        WorkerId = result.WorkerId,
+                    },
+                    TotalCount = queryResult.TotalCount,
+                    PageNumber = queryResult.PageNumber,
+                    PageSize = queryResult.PageSize,
+                    InfoCount = queryResult.InfoCount,
+                    WarningCount = queryResult.WarningCount,
+                    ErrorCount = queryResult.ErrorCount,
+                };
+                queryHeader.ServiceNames.AddRange(result.Entries
+                    .Select(entry => LogEntryQuery.GetServiceName(entry.PodName))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(serviceName => serviceName, StringComparer.OrdinalIgnoreCase));
+
+                responses.Add(new QueryAnalysisResultResponse
+                {
+                    Header = queryHeader,
+                    Status = CreateNoErrorOperationStatus()
+                });
+
+                foreach (var entry in queryResult.Entries)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    responses.Add(new QueryAnalysisResultResponse
+                    {
+                        LogEntry = GrpcTypeConverter.ConvertToGrpc(entry),
+                        Status = CreateNoErrorOperationStatus()
+                    });
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (ArgumentException ex)
+            {
+                responses.Add(new QueryAnalysisResultResponse
+                {
+                    Status = CreateErrorOperationStatus(AgentErrorCode.InvalidArgument, ex.Message)
+                });
+            }
+            catch (OverflowException ex)
+            {
+                responses.Add(new QueryAnalysisResultResponse
+                {
+                    Status = CreateErrorOperationStatus(AgentErrorCode.InvalidArgument, ex.Message)
+                });
+            }
+            catch (Exception ex)
+            {
+                responses.Add(new QueryAnalysisResultResponse
+                {
+                    Status = CreateInternalErrorOperationStatus(ex, "querying an analysis result")
+                });
+                _logger.LogError(ex, "An error occurred while querying analysis result.");
+            }
+
+            return responses;
+        }
     }
 }

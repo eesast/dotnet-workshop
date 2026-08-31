@@ -15,6 +15,7 @@ service LogAnalyzerAgentService {
 	rpc AnalyzeAll(AnalyzeAllRequest) returns (AnalyzeAllResponse);
 	rpc AnalyzeFiles(AnalyzeFilesRequest) returns (AnalyzeFilesResponse);
 	rpc GetAnalysisResult(GetAnalysisResultRequest) returns (stream GetAnalysisResultResponse);
+	rpc QueryAnalysisResult(QueryAnalysisResultRequest) returns (stream QueryAnalysisResultResponse);
 }
 
 enum AgentErrorCode {
@@ -74,6 +75,30 @@ message AnalyzeFilesResponse {
 
 message GetAnalysisResultRequest {
   string file_name = 1;
+}
+
+enum LogSortFieldEnum {
+  LINE_NO = 0;
+  TIMESTAMP = 1;
+  POD_NAME = 2;
+  SEVERITY = 3;
+  EVENT_TYPE = 4;
+  REQUEST_ID = 5;
+}
+
+message QueryAnalysisResultRequest {
+  string file_name = 1;
+  optional LogEventTypeEnum event_type = 2;
+  optional google.protobuf.Timestamp start_time = 3;
+  optional google.protobuf.Timestamp end_time = 4;
+  string service_name = 5;
+  optional LogSeverityEnum severity = 6;
+  string request_id = 7;
+  string search_text = 8;
+  LogSortFieldEnum sort_field = 9;
+  bool sort_descending = 10;
+  int32 page_number = 11;
+  int32 page_size = 12;
 }
 
 enum AnalysisStateEnum {
@@ -146,6 +171,25 @@ message LogEntryMessage {
 message GetAnalysisResultResponse {
 	oneof payload {
 		AnalysisResultHeaderMessage header = 1;
+		LogEntryMessage log_entry = 2;
+	}
+	OperationStatusMessage status = 3;
+}
+
+message QueryAnalysisResultHeaderMessage {
+	AnalysisResultHeaderMessage analysis = 1;
+	int32 total_count = 2;
+	int32 page_number = 3;
+	int32 page_size = 4;
+	int32 info_count = 5;
+	int32 warning_count = 6;
+	int32 error_count = 7;
+	repeated string service_names = 8;
+}
+
+message QueryAnalysisResultResponse {
+	oneof payload {
+		QueryAnalysisResultHeaderMessage header = 1;
 		LogEntryMessage log_entry = 2;
 	}
 	OperationStatusMessage status = 3;

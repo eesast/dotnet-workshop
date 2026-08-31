@@ -7,6 +7,10 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="LogAnalyzerClient.Views.MainWindow"
         Icon="/Assets/log-analyzer-256x256.ico"
+        Width="1280"
+        Height="760"
+        MinWidth="1050"
+        MinHeight="600"
         Title="LogAnalyzerClient">
         <views:MainView />
 </Window>

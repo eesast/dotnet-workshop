@@ -55,5 +55,14 @@ namespace LogAnalyzerAgent.Services
                 await responseStream.WriteAsync(response);
             }
         }
+
+        public override async Task QueryAnalysisResult(QueryAnalysisResultRequest request, IServerStreamWriter<QueryAnalysisResultResponse> responseStream, ServerCallContext context)
+        {
+            var responses = _session.QueryAnalysisResult(request, context.CancellationToken);
+            foreach (var response in responses)
+            {
+                await responseStream.WriteAsync(response, context.CancellationToken);
+            }
+        }
     }
 }
