@@ -47,4 +47,15 @@
         <Setter Property="MinWidth" Value="30" />
         <Setter Property="HorizontalContentAlignment" Value="Right" />
     </Style>
+
+    <!-- T5.1: 日志等级高亮（Error 红 / Warning 橙 / Info 蓝） -->
+    <Style Selector="DataGridRow.sev-error">
+        <Setter Property="Background" Value="#3DFF5252"/>
+    </Style>
+    <Style Selector="DataGridRow.sev-warning">
+        <Setter Property="Background" Value="#3DFFC107"/>
+    </Style>
+    <Style Selector="DataGridRow.sev-info">
+        <Setter Property="Background" Value="#1E4FC3F7"/>
+    </Style>
 </Styles>
