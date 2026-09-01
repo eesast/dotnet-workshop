@@ -88,6 +88,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                          PlaceholderText="Degree of Parallelism" />
                                 <TextBlock Grid.Column="2" Margin="10,0,5,0" VerticalAlignment="Center" Text="Analyze" />
                                 <Button Grid.Column="3" Content="Selected" Command="{Binding AnalyzeSelectedFilesCommand}" />
+                                <Button Grid.Column="4" Margin="5,0,0,0" Content="All" Command="{Binding AnalyzeAllCommand}" />
                                 <!-- TODO: T4.1 -->
                                 <!-- Add "All" button -->
                             </Grid>
