@@ -70,5 +70,18 @@ namespace LogAnalyzerClient.Views
                 .ToList() ?? new List<string>();
             viewModel.SelectedFiles = selectedNames;
         }
+
+        // T5.1: 按行数据的 SeverityClass 给 DataGridRow 加样式类，实现等级高亮
+        private void ResultDataGrid_LoadingRow(object? sender, Avalonia.Controls.DataGridRowEventArgs e)
+        {
+            if (e.Row.DataContext is DisplayRow row)
+            {
+                foreach (var cls in new[] { "sev-info", "sev-warning", "sev-error" })
+                {
+                    e.Row.Classes.Remove(cls);
+                }
+                e.Row.Classes.Add(row.SeverityClass);
+            }
+        }
     }
 }
