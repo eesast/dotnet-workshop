@@ -16,8 +16,8 @@ namespace LogParser.Parser
                     return eventElement.GetString() switch
                     {
                         "call" => LineParser.CreateCall(logRecord),
-                        "request" => throw new NotImplementedException("TODO: T1.2"),
-                        "internal" => throw new NotImplementedException("TODO: T1.2"),
+                        "request" => LineParser.CreateRequest(logRecord),
+                        "internal" => LineParser.CreateInternal(logRecord),
                         _ => throw new FormatException($"Unknown event type: {eventElement.GetString()} in log message: {logRecord.Message}")
                     };
                 }
@@ -50,12 +50,38 @@ namespace LogParser.Parser
 
         private static LogEntry CreateRequest(LogRecord logRecord)
         {
-            throw new NotImplementedException("TODO: T1.2");
+            var requestMessage = JsonSerializer.Deserialize<RequestMessage>(logRecord.Message, options)
+                ?? throw new FormatException($"Failed to deserialize request message: {logRecord.Message}");
+            return new RequestLogEntry(
+                LineNo: logRecord.LineNo,
+                Timestamp: DateTimeOffset.Parse(logRecord.Timestamp),
+                PodName: logRecord.PodName,
+                Severity: ParseSeverity(requestMessage.Severity),
+                RequestId: requestMessage.RequestId,
+                Method: requestMessage.Method,
+                Path: requestMessage.Path,
+                StatusCode: requestMessage.StatusCode
+            );
         }
 
         private static LogEntry CreateInternal(LogRecord logRecord)
         {
-            throw new NotImplementedException("TODO: T1.2");
+            var internalMessage = JsonSerializer.Deserialize<InternalMessage>(logRecord.Message, options)
+                ?? throw new FormatException($"Failed to deserialize internal message: {logRecord.Message}");
+            // 字段值固定为 "ExceptionName: exception message" 格式，按第一个冒号+空格切分
+            var separatorIndex = internalMessage.Exception.IndexOf(": ");
+            if (separatorIndex < 0)
+            {
+                throw new FormatException($"Exception field is not in 'ExceptionName: message' format: {internalMessage.Exception}");
+            }
+            return new InternalLogEntry(
+                LineNo: logRecord.LineNo,
+                Timestamp: DateTimeOffset.Parse(logRecord.Timestamp),
+                PodName: logRecord.PodName,
+                Severity: ParseSeverity(internalMessage.Severity),
+                ExceptionName: internalMessage.Exception[..separatorIndex],
+                ExceptionMessage: internalMessage.Exception[(separatorIndex + 2)..]
+            );
         }
 
         private static LogSeverity ParseSeverity(string severity)
@@ -78,10 +104,17 @@ namespace LogParser.Parser
 
         private record RequestMessage(
             // TODO: T1.2
+            [property: JsonRequired] string Severity,
+            [property: JsonRequired] string RequestId,
+            [property: JsonRequired] string Method,
+            [property: JsonRequired] string Path,
+            [property: JsonRequired] int StatusCode
         );
 
         private record InternalMessage(
             // TODO: T1.2
+            [property: JsonRequired] string Severity,
+            [property: JsonRequired] string Exception
         );
     }
 }
