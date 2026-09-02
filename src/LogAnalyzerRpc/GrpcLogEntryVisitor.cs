@@ -1,4 +1,4 @@
-﻿using Google.Protobuf.WellKnownTypes;
+using Google.Protobuf.WellKnownTypes;
 using LogAnalyzerRpc.Protos;
 using LogParser.Models;
 
@@ -30,12 +30,38 @@ namespace LogAnalyzerRpc
 
         public LogEntryMessage Visit(RequestLogEntry entry)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            return new LogEntryMessage()
+            {
+                RequestLogEntry = new RequestLogEntryMessage
+                {
+                    LineNo = entry.LineNo,
+                    Timestamp = Timestamp.FromDateTimeOffset(entry.Timestamp),
+                    PodName = entry.PodName,
+                    Severity = GrpcTypeConverter.ConvertToGrpc(entry.Severity),
+                    EventType = GrpcTypeConverter.ConvertToGrpc(entry.EventType),
+                    RequestId = entry.RequestId,
+                    Method = entry.Method,
+                    Path = entry.Path,
+                    StatusCode = entry.StatusCode,
+                }
+            };
         }
 
         public LogEntryMessage Visit(InternalLogEntry entry)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            return new LogEntryMessage()
+            {
+                InternalLogEntry = new InternalLogEntryMessage
+                {
+                    LineNo = entry.LineNo,
+                    Timestamp = Timestamp.FromDateTimeOffset(entry.Timestamp),
+                    PodName = entry.PodName,
+                    Severity = GrpcTypeConverter.ConvertToGrpc(entry.Severity),
+                    EventType = GrpcTypeConverter.ConvertToGrpc(entry.EventType),
+                    ExceptionName = entry.ExceptionName,
+                    ExceptionMessage = entry.ExceptionMessage,
+                }
+            };
         }
     }
 }

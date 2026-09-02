@@ -1,13 +1,13 @@
 ﻿using LogParser.Models;
 using LogParser.Parser;
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace LogAnalyzer
 {
     public class LogFileAnalyzer
     {
-        private readonly object _syncRoot = new();
+        private readonly object _syncRoot = new(); // 互斥量
         private string? _currentDirectory = null;
         private bool _isAnalyzing = false;
         private readonly Dictionary<string, FileInfo> _logFiles = new();
@@ -19,13 +19,11 @@ namespace LogAnalyzer
         {
             get
             {
-                lock (_syncRoot)
-                {
-                    return _isAnalyzing;
-                }
+                lock (_syncRoot) return _isAnalyzing;
             }
         }
 
+        // ... (省略构造函数和 ChangeDirectory，保持你原有的不变) ...
         public LogFileAnalyzer(string? directoryPath = null)
         {
             var cdResult = ChangeDirectory(directoryPath);
@@ -107,7 +105,6 @@ namespace LogAnalyzer
             }
             AnalyzeFiles(degreeOfParallelism, fileNames);
         }
-
         public void AnalyzeFiles(int degreeOfParallelism, IEnumerable<string> fileNames)
         {
             if (degreeOfParallelism < 0)
@@ -124,24 +121,17 @@ namespace LogAnalyzer
             List<FileInfo> fileList;
             lock (_syncRoot)
             {
-                if (_isAnalyzing)
-                {
-                    throw new InvalidOperationException("Analysis is already in progress.");
-                }
+                if (_isAnalyzing) throw new InvalidOperationException("Analysis already in progress.");
 
                 foreach (var fileName in fileNameList)
                 {
                     if (!_logFiles.ContainsKey(fileName))
-                    {
-                        throw new ArgumentException($"File '{fileName}' is not in the current directory or does not exist.");
-                    }
+                        throw new ArgumentException($"File '{fileName}' does not exist.");
                 }
                 fileList = fileNameList.Select(fileName => _logFiles[fileName]).ToList();
 
-                /*
-                 * Set _isAnalyzing
-                 */
-                // TODO: T2.2
+                // 【T2.2: 设置正在分析标记】
+                _isAnalyzing = true;
             }
 
             try
@@ -150,11 +140,11 @@ namespace LogAnalyzer
             }
             finally
             {
-                /*
-                 * Unset _isAnalyzing
-                 * Remember to lock _syncRoot to prevent data race
-                 */
-                // TODO: T2.2
+                // 【T2.2: 无论成功失败，最后都要解除标记】
+                lock (_syncRoot)
+                {
+                    _isAnalyzing = false;
+                }
             }
         }
 
@@ -165,42 +155,51 @@ namespace LogAnalyzer
             {
                 foreach (var file in fileList)
                 {
-                    /*
-                     * Filter unparsed files.
-                     * If there is an unknown file, throw System.InvalidOperationException.
-                     */
-                    throw new NotImplementedException("TODO: T2.2");
+                    // 【T2.2: 过滤未解析或需重解析的文件】
+                    if (!_analysisResults.TryGetValue(file.Name, out var currentResult))
+                    {
+                        throw new InvalidOperationException($"File {file.Name} is unknown.");
+                    }
+
+                    // 只有未分析或失败的文件需要重新解析（已成功的跳过）
+                    if (currentResult.State != AnalysisState.Succeeded)
+                    {
+                        logFilesToParse.Add(file);
+                    }
                 }
             }
 
-            if (logFilesToParse.Count == 0)
-            {
-                return;
-            }
+            if (logFilesToParse.Count == 0) return;
 
+            // 创建之前完成的阻塞队列
             var queue = new WorkQueue<FileInfo>();
 
-            /*
-             * Enqueue log files
-             */
-            // TODO: T2.2
+            // 【T2.2: 生产者 - 放入所有文件并结束生产】
+            foreach (var file in logFilesToParse)
+            {
+                queue.Enqueue(file);
+            }
+            queue.CompleteAdding(); // 必须调用，否则工人会死等
 
+            // 确定实际需要的线程数
             degreeOfParallelism = Math.Max(Math.Min(degreeOfParallelism, logFilesToParse.Count), 1);
             var workers = new Thread[degreeOfParallelism];
             for (int i = 0; i < degreeOfParallelism; i++)
             {
-                int workerId = i;
-                string threadName = $"log-analyzer-worker-{workerId}";
-                /*
-                 * Create and start threads to run `WorkerMain`
-                 */
-                // TODO: T2.2
+                int workerId = i; // 闭包变量，必须在循环内声明
+                // 【T2.2: 创建并启动工人线程】
+                workers[i] = new Thread(() => WorkerMain(workerId, queue))
+                {
+                    Name = $"log-analyzer-worker-{workerId}"
+                };
+                workers[i].Start();
             }
 
-            /*
-             * Wait for (join) all threads to end
-             */
-            // TODO: T2.2
+            // 【T2.2: 等待所有工人收工】
+            foreach (var worker in workers)
+            {
+                worker.Join();
+            }
         }
 
         private void WorkerMain(int workerId, WorkQueue<FileInfo> queue)
@@ -212,20 +211,42 @@ namespace LogAnalyzer
                 AnalysisResult result;
                 try
                 {
-                    // Parse file
-                    throw new NotImplementedException("TODO: T2.2");
+                    // 【T2.2: 调用解析器解析文件】
+                    // 注意：Parse 是惰性求值，真正的读文件/解析发生在 ToArray() 时，
+                    // 所以必须把 ToArray() 放在锁外，否则解析会被锁串行化、失去并行性
+                    using var reader = new StreamReader(file.FullName);
+                    var entries = parser.Parse(reader).ToArray();
+
+                    lock (_syncRoot)
+                    {
+                        result = _analysisResults[file.Name] with
+                        {
+                            State = AnalysisState.Succeeded,
+                            Entries = entries,
+                            WorkerId = workerId,
+                            ErrorMessage = null
+                        };
+                    }
                 }
                 catch (Exception ex)
                 {
-                    // Save exception message to result
-                    throw new NotImplementedException("TODO: T2.2");
+                    // 【T2.2: 异常处理】
+                    lock (_syncRoot)
+                    {
+                        result = _analysisResults[file.Name] with
+                        {
+                            State = AnalysisState.Failed,
+                            ErrorMessage = ex.Message,
+                            WorkerId = workerId
+                        };
+                    }
                 }
 
-                /*
-                 * Save parse result.
-                 * [!Important] Remember to lock _syncRoot to prevent data race.
-                 */
-                throw new NotImplementedException("TODO: T2.2");
+                // 【T2.2: 保存结果，必须加锁防止数据竞争】
+                lock (_syncRoot)
+                {
+                    _analysisResults[file.Name] = result;
+                }
             }
         }
     }
