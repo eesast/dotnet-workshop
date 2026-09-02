@@ -56,5 +56,9 @@ namespace LogAnalyzerAgent.Services
             }
         }
 
+        public override Task<QueryLogEntriesResponse> QueryLogEntries(QueryLogEntriesRequest request, ServerCallContext context)
+        {
+            return Task.FromResult(_session.QueryLogEntries(request, context.CancellationToken));
         }
+    }
 }

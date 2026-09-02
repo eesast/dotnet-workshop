@@ -234,6 +234,130 @@ namespace LogAnalyzerAgent.Applications
             return responses;
         }
 
+        public QueryLogEntriesResponse QueryLogEntries(QueryLogEntriesRequest request, CancellationToken cancellationToken)
+        {
+            var response = new QueryLogEntriesResponse();
+            try
+            {
+                if (!_analyzer.TryGetAnalysisResult(request.FileName, out var result) || result is null)
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.FileNotFound,
+                        $"File '{request.FileName}' is not found.");
+                    return response;
+                }
+
+                if (result.State != AnalysisState.Succeeded)
+                {
+                    var reason = result.State == AnalysisState.Failed && result.ErrorMessage is not null
+                        ? $" (reason: {result.ErrorMessage})"
+                        : string.Empty;
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidOperation,
+                        $"File '{request.FileName}' has not been successfully analyzed. State = {result.State}.{reason}");
+                    return response;
+                }
+
+                var filter = new LogEntryQueryFilter
+                {
+                    EventType = request.HasEventType ? GrpcTypeConverter.ConvertFromGrpc(request.EventType) : null,
+                    Severity = request.HasSeverity ? GrpcTypeConverter.ConvertFromGrpc(request.Severity) : null,
+                    ServiceName = string.IsNullOrWhiteSpace(request.ServiceName) ? null : request.ServiceName.Trim(),
+                    RequestId = string.IsNullOrWhiteSpace(request.RequestId) ? null : request.RequestId.Trim(),
+                    StartTime = request.StartTime?.ToDateTimeOffset(),
+                    EndTime = request.EndTime?.ToDateTimeOffset(),
+                };
+
+                var matched = new List<LogEntry>();
+                foreach (var entry in result.Entries)
+                {
+                    if (filter.IsMatch(entry))
+                    {
+                        matched.Add(entry);
+                    }
+                }
+
+                response.TotalCount = result.Entries.Count;
+                response.MatchedCount = matched.Count;
+                response.Status = CreateNoErrorOperationStatus();
+                foreach (var entry in matched)
+                {
+                    response.LogEntries.Add(GrpcTypeConverter.ConvertToGrpc(entry));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while querying log entries.");
+                response.Status = CreateInternalErrorOperationStatus(ex);
+            }
+            return response;
+        }
+
+        /// <summary>
+        /// Filters a parsed <see cref="LogEntry"/> against a set of query conditions.
+        /// A null condition means "no constraint"; all set conditions must match.
+        /// </summary>
+        private sealed class LogEntryQueryFilter
+        {
+            public LogEventType? EventType { get; init; }
+
+            public LogSeverity? Severity { get; init; }
+
+            /// <summary>Prefix of the producing service/pod name.</summary>
+            public string? ServiceName { get; init; }
+
+            public string? RequestId { get; init; }
+
+            public DateTimeOffset? StartTime { get; init; }
+
+            public DateTimeOffset? EndTime { get; init; }
+
+            public bool IsMatch(LogEntry entry)
+            {
+                if (EventType is { } eventType && entry.EventType != eventType)
+                {
+                    return false;
+                }
+
+                if (Severity is { } severity && entry.Severity != severity)
+                {
+                    return false;
+                }
+
+                if (ServiceName is not null
+                    && !entry.PodName.StartsWith(ServiceName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+
+                if (RequestId is not null)
+                {
+                    var entryRequestId = entry switch
+                    {
+                        CallLogEntry call => call.RequestId,
+                        RequestLogEntry request => request.RequestId,
+                        _ => null,
+                    };
+                    if (!string.Equals(entryRequestId, RequestId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return false;
+                    }
+                }
+
+                if (StartTime is not null && entry.Timestamp < StartTime.Value)
+                {
+                    return false;
+                }
+
+                if (EndTime is not null && entry.Timestamp > EndTime.Value)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
         private static OperationStatusMessage CreateErrorOperationStatus(AgentErrorCode code, string message)
         {
             return new OperationStatusMessage()

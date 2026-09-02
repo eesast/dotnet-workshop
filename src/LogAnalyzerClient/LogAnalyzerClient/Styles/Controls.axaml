@@ -47,4 +47,17 @@
         <Setter Property="MinWidth" Value="30" />
         <Setter Property="HorizontalContentAlignment" Value="Right" />
     </Style>
+
+    <Style Selector="Border.Toolbar">
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="Padding" Value="8" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+        <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.StatsText">
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="Opacity" Value="0.85" />
+    </Style>
 </Styles>

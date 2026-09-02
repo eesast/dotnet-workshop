@@ -7,7 +7,7 @@ using LogAnalyzerClient.Models;
 using LogAnalyzerClient.Services;
 using LogAnalyzerRpc;
 using LogAnalyzerRpc.Protos;
-using LogParser.Visitors;
+using LogParser.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -52,11 +52,6 @@ namespace LogAnalyzerClient.ViewModels
 
         [ObservableProperty]
         private LogFileItem? _selectedLogFile = null;
-
-        [ObservableProperty]
-        private ObservableCollection<LogFields> _resultEntries = new();
-
-        private readonly KeyValueVisitor _visitor = new();
 
         [RelayCommand]
         private async Task ConnectAsync()
@@ -113,7 +108,7 @@ namespace LogAnalyzerClient.ViewModels
         [RelayCommand]
         private async Task ChangeDirectoryAsync()
         {
-            await WithClientNotNull(async () =>
+            await WithClientNotNull(async() =>
             {
                 var request = new ChangeDirectoryRequest()
                 {
@@ -141,12 +136,23 @@ namespace LogAnalyzerClient.ViewModels
                         $"{response.Status.Code}: {response.Status.Message}");
                     return;
                 }
+
                 LogFiles.Clear();
                 foreach (var fileName in response.FileNames)
                 {
                     LogFiles.Add(new LogFileItem(fileName));
                 }
             });
+        }
+
+        private bool TryReadDegreeOfParallelism(out int degree)
+        {
+            if (int.TryParse(DegreeOfParallelismText, out degree) && degree >= 0)
+            {
+                return true;
+            }
+            degree = -1;
+            return false;
         }
 
         [RelayCommand]
@@ -159,9 +165,9 @@ namespace LogAnalyzerClient.ViewModels
                     await DialogHelper.ShowMessageDialogAsync("Error", "No files are selected.");
                     return;
                 }
-
                 if (!TryReadDegreeOfParallelism(out var degree))
                 {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "Invalid degree of parallelism.");
                     return;
                 }
 
@@ -187,6 +193,7 @@ namespace LogAnalyzerClient.ViewModels
             {
                 if (!TryReadDegreeOfParallelism(out var degree))
                 {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "Invalid degree of parallelism.");
                     return;
                 }
 
@@ -194,6 +201,7 @@ namespace LogAnalyzerClient.ViewModels
                 {
                     DegreeOfParallelism = degree,
                 };
+
                 var response = await _client!.AnalyzeAllAsync(request);
                 if (!response.Status.Success)
                 {
@@ -202,6 +210,7 @@ namespace LogAnalyzerClient.ViewModels
                 }
             });
         }
+
         [RelayCommand]
         private async Task AnalyzeRightClickedFileAsync()
         {
@@ -212,9 +221,9 @@ namespace LogAnalyzerClient.ViewModels
                     await DialogHelper.ShowMessageDialogAsync("Error", "No file is selected.");
                     return;
                 }
-
                 if (!TryReadDegreeOfParallelism(out var degree))
                 {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "Invalid degree of parallelism.");
                     return;
                 }
 
@@ -250,19 +259,16 @@ namespace LogAnalyzerClient.ViewModels
                     FileName = fileName,
                 };
 
-                ResultEntries.Clear();
+                ClearResultRows();
 
                 using var call = _client!.GetAnalysisResult(request);
                 var header = null as AnalysisResultHeaderMessage;
-                var index = 0;
+                var loadedEntries = new List<LogEntry>();
                 await foreach (var response in call.ResponseStream.ReadAllAsync())
                 {
                     if (!response.Status.Success)
                     {
-                        ResultEntries.Add(new LogFields(
-                            index,
-                            Array.Empty<LogFieldItem>(),
-                            $"{fileName} · {response.Status.Code}: {response.Status.Message}"));
+                        ShowQueryError(response.Status.Message);
                         return;
                     }
 
@@ -270,28 +276,34 @@ namespace LogAnalyzerClient.ViewModels
                     {
                         case GetAnalysisResultResponse.PayloadOneofCase.Header:
                             header = response.Header;
-                            var fields = new List<LogFieldItem>
-                            {
-                                new LogFieldItem("FileName", header.FileName),
-                                new LogFieldItem("State", header.State.ToString()),
-                                new LogFieldItem("WorkerId", header.WorkerId.ToString()),
-                            };
-                            if (header.HasErrorMessage)
-                            {
-                                fields.Add(new LogFieldItem("ErrorMessage", header.ErrorMessage));
-                            }
-                            ResultEntries.Add(new LogFields(index, fields, null));
-                            index++;
                             break;
                         case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
-                            var entry = GrpcTypeConverter.ConvertFromGrpc(response.LogEntry);
-                            var dumped = _visitor.Dump(entry);
-                            var entryFields = dumped.Select(kv => new LogFieldItem(kv.Key, kv.Value)).ToList();
-                            ResultEntries.Add(new LogFields(index, entryFields, null));
-                            index++;
+                            loadedEntries.Add(GrpcTypeConverter.ConvertFromGrpc(response.LogEntry));
                             break;
                     }
                 }
+
+                if (header is null)
+                {
+                    ShowQueryError("The agent returned no analysis result header.");
+                    return;
+                }
+
+                if (header.State != AnalysisStateEnum.Succeeded)
+                {
+                    var errorText = header.HasErrorMessage
+                        ? header.ErrorMessage
+                        : header.State == AnalysisStateEnum.NotAnalyzed
+                            ? "The file has not been analyzed yet."
+                            : $"File analysis state = {header.State}.";
+                    ShowQueryError($"{fileName} · {header.State} · {errorText}");
+                    return;
+                }
+
+                var rows = loadedEntries
+                    .Select(LogEntryRow.FromEntry)
+                    .ToList();
+                ShowRows(rows, $"{fileName} · Succeeded · Worker {header.WorkerId} · {rows.Count} of {rows.Count} entries");
             });
         }
 
@@ -304,16 +316,6 @@ namespace LogAnalyzerClient.ViewModels
                 EESAST Software Center
                 https://github.com/eesast/dotnet-workshop
                 """);
-        }
-
-        private bool TryReadDegreeOfParallelism(out int degree)
-        {
-            if (!int.TryParse(DegreeOfParallelismText, out degree) || degree < 0)
-            {
-                _ = DialogHelper.ShowMessageDialogAsync("Error", "Invalid degree of parallelism. Must be a non-negative integer.");
-                return false;
-            }
-            return true;
         }
     }
 }
