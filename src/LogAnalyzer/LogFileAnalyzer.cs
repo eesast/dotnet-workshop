@@ -141,7 +141,7 @@ namespace LogAnalyzer
                 /*
                  * Set _isAnalyzing
                  */
-                // TODO: T2.2
+                _isAnalyzing = true;
             }
 
             try
@@ -154,7 +154,10 @@ namespace LogAnalyzer
                  * Unset _isAnalyzing
                  * Remember to lock _syncRoot to prevent data race
                  */
-                // TODO: T2.2
+                lock (_syncRoot)
+                {
+                    _isAnalyzing = false;
+                }
             }
         }
 
@@ -169,7 +172,18 @@ namespace LogAnalyzer
                      * Filter unparsed files.
                      * If there is an unknown file, throw System.InvalidOperationException.
                      */
-                    throw new NotImplementedException("TODO: T2.2");
+                    if (!_analysisResults.TryGetValue(file.Name, out var existingResult))
+                    {
+                        throw new InvalidOperationException($"File '{file.Name}' is unknown to the analyzer.");
+                    }
+
+                    // Skip files that have already been analyzed.
+                    if (existingResult.State != AnalysisState.NotAnalyzed)
+                    {
+                        continue;
+                    }
+
+                    logFilesToParse.Add(file);
                 }
             }
 
@@ -183,7 +197,11 @@ namespace LogAnalyzer
             /*
              * Enqueue log files
              */
-            // TODO: T2.2
+            foreach (var file in logFilesToParse)
+            {
+                queue.Enqueue(file);
+            }
+            queue.CompleteAdding();
 
             degreeOfParallelism = Math.Max(Math.Min(degreeOfParallelism, logFilesToParse.Count), 1);
             var workers = new Thread[degreeOfParallelism];
@@ -194,13 +212,21 @@ namespace LogAnalyzer
                 /*
                  * Create and start threads to run `WorkerMain`
                  */
-                // TODO: T2.2
+                workers[i] = new Thread(() => WorkerMain(workerId, queue))
+                {
+                    IsBackground = true,
+                    Name = threadName,
+                };
+                workers[i].Start();
             }
 
             /*
              * Wait for (join) all threads to end
              */
-            // TODO: T2.2
+            foreach (var worker in workers)
+            {
+                worker.Join();
+            }
         }
 
         private void WorkerMain(int workerId, WorkQueue<FileInfo> queue)
@@ -213,19 +239,42 @@ namespace LogAnalyzer
                 try
                 {
                     // Parse file
-                    throw new NotImplementedException("TODO: T2.2");
+                    List<LogEntry> entries;
+                    using (var reader = new StreamReader(file.FullName))
+                    {
+                        entries = parser.Parse(reader).ToList();
+                    }
+
+                    result = new AnalysisResult(
+                        FileName: file.Name,
+                        FullName: file.FullName,
+                        State: AnalysisState.Succeeded,
+                        Entries: entries,
+                        ErrorMessage: null,
+                        WorkerId: workerId
+                    );
                 }
                 catch (Exception ex)
                 {
                     // Save exception message to result
-                    throw new NotImplementedException("TODO: T2.2");
+                    result = new AnalysisResult(
+                        FileName: file.Name,
+                        FullName: file.FullName,
+                        State: AnalysisState.Failed,
+                        Entries: Array.Empty<LogEntry>(),
+                        ErrorMessage: ex.Message,
+                        WorkerId: workerId
+                    );
                 }
 
                 /*
                  * Save parse result.
                  * [!Important] Remember to lock _syncRoot to prevent data race.
                  */
-                throw new NotImplementedException("TODO: T2.2");
+                lock (_syncRoot)
+                {
+                    _analysisResults[file.Name] = result;
+                }
             }
         }
     }
