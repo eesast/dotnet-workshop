@@ -116,32 +116,122 @@ namespace RemoteCli
 
         private static async Task ShowLogFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var response = await client.GetLogFilesAsync(new Empty());
+            if(!response.Status.Success)
+            {
+                Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                return;
+            }
+            if(response.FileNames.Count == 0)
+            {
+                Console.WriteLine("No log files found.");
+                return;
+            }
+            foreach (var file in response.FileNames)
+            {
+                Console.WriteLine(file);
+            }
+            return;
         }
 
         private static int ReadDegreeOfParallelism()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            while (true) { 
+                Console.WriteLine("Please input degree of parallelism:");
+                Console.Write(">>> ");
+                var dopStr = Console.ReadLine();
+                if (dopStr is null)
+                {
+                    return 0;
+                }
+                if(int.TryParse(dopStr, out int dop) && dop > 0)
+                {
+                    return dop;
+                }
+                Console.WriteLine("Invalid input, please try again.");
+            }
         }
 
         private static List<string> ReadFileNames()
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.WriteLine("Please input log file names (separated by commas):");
+            Console.Write(">>> ");
+            var fileNamesStr = Console.ReadLine();
+            if(fileNamesStr is null)
+            {
+                return new List<string>();
+            }
+            return fileNamesStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
         }
 
         private static async Task AnalyzeFiles(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var dop = ReadDegreeOfParallelism();
+            var fileNames = ReadFileNames();
+            var request = new AnalyzeFilesRequest()
+            {
+                DegreeOfParallelism = dop,
+            };
+            request.FileNames.AddRange(fileNames);
+            var response = await client.AnalyzeFilesAsync(request);
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                return;
+            }
+            Console.WriteLine("Analysis Completed Successfully.");
         }
 
         private static async Task AnalyzeAll(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            var dop = ReadDegreeOfParallelism();
+            var request = new AnalyzeAllRequest()
+            {
+                DegreeOfParallelism = dop,
+            };
+            var response = await client.AnalyzeAllAsync(request);
+            if (!response.Status.Success)
+            {
+                Console.WriteLine($"Error: {response.Status.Code}: {response.Status.Message}");
+                return;
+            }
+            Console.WriteLine("Analysis Completed Successfully.");
         }
 
         private static async Task GetAnalysisResult(LogAnalyzerAgentServiceClient client)
         {
-            throw new NotImplementedException("TODO: T3.2");
+            Console.WriteLine("Please input log file name to get analysis result:");
+            Console.Write(">>> ");
+            var fileName = Console.ReadLine();
+            if (fileName is null) return;
+            using var call = client.GetAnalysisResult(new GetAnalysisResultRequest()
+            {
+                FileName = fileName,
+            });
+            while (await call.ResponseStream.MoveNext())
+            {
+                var result = call.ResponseStream.Current;
+                switch (result.PayloadCase) {
+                    case GetAnalysisResultResponse.PayloadOneofCase.Header:
+                        Console.WriteLine($"Result of {result.Header.FileName}: State = {result.Header.State}");
+                        break;
+                    case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
+                        var entry = result.LogEntry;
+                        switch (entry.EntryCase)
+                        {
+                            case LogEntryMessage.EntryOneofCase.CallLogEntry:
+                                Console.WriteLine($"  line {entry.CallLogEntry.LineNo}: call {entry.CallLogEntry.TargetService}");
+                                break;
+                            case LogEntryMessage.EntryOneofCase.RequestLogEntry:
+                                Console.WriteLine($"  line {entry.RequestLogEntry.LineNo}: {entry.RequestLogEntry.Method} {entry.RequestLogEntry.Path} -> {entry.RequestLogEntry.StatusCode}");
+                                break;
+                            case LogEntryMessage.EntryOneofCase.InternalLogEntry:
+                                Console.WriteLine($"  line {entry.InternalLogEntry.LineNo}: {entry.InternalLogEntry.ExceptionName}");
+                                break;
+                        }
+                        break;
+                }
+            }
         }
     }
 }

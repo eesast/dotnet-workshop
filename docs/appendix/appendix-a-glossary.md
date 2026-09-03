@@ -40,27 +40,27 @@
 
 ## 云服务与日志
 
-| 简体中文（大陆） | 繁體中文（台灣） | English (United States) |
-| --- | --- | --- |
-| 云 | 雲端 | cloud |
-| 云服务 | 雲端服務 | cloud service |
-| 微服务 | 微服務 | microservice |
-| 架构 | 架構 | architecture |
-| 部署 | 部署 | deployment |
-| 前端 | 前端 | frontend |
-| 后端 | 後端 | backend |
-| 日志 | 記錄 | log |
-| 日志文件 | 記錄檔 | log file |
-| 结构化日志 | 結構化記錄 | structured log |
-| 半结构化日志 | 半結構化記錄 | semi-structured log |
-| 非结构化日志 | 非結構化記錄 | unstructured log |
-| 日志等级 | 記錄層級 | log level |
-| 字段 | 欄位 | field |
-| 故障诊断 | 故障診斷 | fault diagnosis |
-| 异常检测 | 異常偵測 | anomaly detection |
-| 大语言模型 | 大型語言模型 | large language model (LLM) |
-| 可观测性 | 可觀測性 | observability |
-| 云服务拓扑 | 雲端服務拓撲 | cloud service topology |
+| 简体中文（大陆） | 繁體中文（台灣） | English (United States)    |
+| -------- | -------- | -------------------------- |
+| 云        | 雲端       | cloud                      |
+| 云服务      | 雲端服務     | cloud service              |
+| 微服务      | 微服務      | microservice               |
+| 架构       | 架構       | architecture               |
+| 部署       | 部署       | deployment                 |
+| 前端       | 前端       | frontend                   |
+| 后端       | 後端       | backend                    |
+| 日志       | 記錄       | log                        |
+| 日志文件     | 記錄檔      | log file                   |
+| 结构化日志    | 結構化記錄    | structured log             |
+| 半结构化日志   | 半結構化記錄   | semi-structured log        |
+| 非结构化日志   | 非結構化記錄   | unstructured log           |
+| 日志等级     | 記錄層級     | log level                  |
+| 字段       | 欄位       | field                      |
+| 故障诊断     | 故障診斷     | fault diagnosis            |
+| 异常检测     | 異常偵測     | anomaly detection          |
+| 大语言模型    | 大型語言模型   | large language model (LLM) |
+| 可观测性     | 可觀測性     | observability              |
+| 云服务拓扑    | 雲端服務拓撲   | cloud service topology     |
 
 ## C\#、面向对象程序设计与设计模式
 
