@@ -15,6 +15,9 @@ service LogAnalyzerAgentService {
 	rpc AnalyzeAll(AnalyzeAllRequest) returns (AnalyzeAllResponse);
 	rpc AnalyzeFiles(AnalyzeFilesRequest) returns (AnalyzeFilesResponse);
 	rpc GetAnalysisResult(GetAnalysisResultRequest) returns (stream GetAnalysisResultResponse);
+	// Query log entries of an already-analyzed file by conditions (event type, severity,
+	// producing service/pod, request id and/or a time range).
+	rpc QueryLogEntries(QueryLogEntriesRequest) returns (QueryLogEntriesResponse);
 }
 
 enum AgentErrorCode {
@@ -149,4 +152,27 @@ message GetAnalysisResultResponse {
 		LogEntryMessage log_entry = 2;
 	}
 	OperationStatusMessage status = 3;
+}
+
+// Filters for a log-entry query. Every field is optional:
+// an unset/null field means "no constraint on this dimension".
+message QueryLogEntriesRequest {
+	string file_name = 1;
+	optional LogEventTypeEnum event_type = 2;
+	optional LogSeverityEnum severity = 3;
+	// Prefix of the producing service/pod name, e.g. "gateway" matches "gateway-0".
+	string service_name = 4;
+	// Exact (case-insensitive) request id.
+	string request_id = 5;
+	google.protobuf.Timestamp start_time = 6;
+	google.protobuf.Timestamp end_time = 7;
+}
+
+message QueryLogEntriesResponse {
+	OperationStatusMessage status = 1;
+	// Total number of entries stored in the analyzed result.
+	int32 total_count = 2;
+	// Number of entries that matched the query conditions.
+	int32 matched_count = 3;
+	repeated LogEntryMessage log_entries = 4;
 }

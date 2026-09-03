@@ -7,7 +7,7 @@ using LogAnalyzerClient.Models;
 using LogAnalyzerClient.Services;
 using LogAnalyzerRpc;
 using LogAnalyzerRpc.Protos;
-using LogParser.Visitors;
+using LogParser.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -52,9 +52,6 @@ namespace LogAnalyzerClient.ViewModels
 
         [ObservableProperty]
         private LogFileItem? _selectedLogFile = null;
-
-        [ObservableProperty]
-        private ObservableCollection<LogFields> _resultEntries = new();
 
         [RelayCommand]
         private async Task ConnectAsync()
@@ -132,31 +129,182 @@ namespace LogAnalyzerClient.ViewModels
         {
             await WithClientNotNull(async () =>
             {
-                throw new NotImplementedException("TODO: T4.1");
+                var response = await _client!.GetLogFilesAsync(new Empty());
+                if (!response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        $"{response.Status.Code}: {response.Status.Message}");
+                    return;
+                }
+
+                LogFiles.Clear();
+                foreach (var fileName in response.FileNames)
+                {
+                    LogFiles.Add(new LogFileItem(fileName));
+                }
             });
+        }
+
+        private bool TryReadDegreeOfParallelism(out int degree)
+        {
+            if (int.TryParse(DegreeOfParallelismText, out degree) && degree >= 0)
+            {
+                return true;
+            }
+            degree = -1;
+            return false;
         }
 
         [RelayCommand]
         private async Task AnalyzeSelectedFilesAsync()
         {
-            throw new NotImplementedException("TODO: T4.1");
+            await WithClientNotNull(async () =>
+            {
+                if (SelectedFiles.Count == 0)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "No files are selected.");
+                    return;
+                }
+                if (!TryReadDegreeOfParallelism(out var degree))
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "Invalid degree of parallelism.");
+                    return;
+                }
+
+                var request = new AnalyzeFilesRequest()
+                {
+                    DegreeOfParallelism = degree,
+                };
+                request.FileNames.AddRange(SelectedFiles);
+
+                var response = await _client!.AnalyzeFilesAsync(request);
+                if (!response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        $"{response.Status.Code}: {response.Status.Message}");
+                }
+            });
         }
 
-        /*
-         * TODO: T4.1
-         * Add AnalyzeAllAsync ReplayCommand
-         */
+        [RelayCommand]
+        private async Task AnalyzeAllAsync()
+        {
+            await WithClientNotNull(async () =>
+            {
+                if (!TryReadDegreeOfParallelism(out var degree))
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "Invalid degree of parallelism.");
+                    return;
+                }
+
+                var request = new AnalyzeAllRequest()
+                {
+                    DegreeOfParallelism = degree,
+                };
+
+                var response = await _client!.AnalyzeAllAsync(request);
+                if (!response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        $"{response.Status.Code}: {response.Status.Message}");
+                }
+            });
+        }
 
         [RelayCommand]
         private async Task AnalyzeRightClickedFileAsync()
         {
-            throw new NotImplementedException("TODO: T4.1");
+            await WithClientNotNull(async () =>
+            {
+                if (SelectedLogFile is null)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "No file is selected.");
+                    return;
+                }
+                if (!TryReadDegreeOfParallelism(out var degree))
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "Invalid degree of parallelism.");
+                    return;
+                }
+
+                var request = new AnalyzeFilesRequest()
+                {
+                    DegreeOfParallelism = degree,
+                };
+                request.FileNames.Add(SelectedLogFile.FileName);
+
+                var response = await _client!.AnalyzeFilesAsync(request);
+                if (!response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        $"{response.Status.Code}: {response.Status.Message}");
+                }
+            });
         }
 
         [RelayCommand]
         private async Task GetAnalysisResultAsync()
         {
-            throw new NotImplementedException("TODO: T4.1");
+            await WithClientNotNull(async () =>
+            {
+                if (SelectedLogFile is null)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "No file is selected.");
+                    return;
+                }
+
+                var fileName = SelectedLogFile.FileName;
+                var request = new GetAnalysisResultRequest()
+                {
+                    FileName = fileName,
+                };
+
+                ClearResultRows();
+
+                using var call = _client!.GetAnalysisResult(request);
+                var header = null as AnalysisResultHeaderMessage;
+                var loadedEntries = new List<LogEntry>();
+                await foreach (var response in call.ResponseStream.ReadAllAsync())
+                {
+                    if (!response.Status.Success)
+                    {
+                        ShowQueryError(response.Status.Message);
+                        return;
+                    }
+
+                    switch (response.PayloadCase)
+                    {
+                        case GetAnalysisResultResponse.PayloadOneofCase.Header:
+                            header = response.Header;
+                            break;
+                        case GetAnalysisResultResponse.PayloadOneofCase.LogEntry:
+                            loadedEntries.Add(GrpcTypeConverter.ConvertFromGrpc(response.LogEntry));
+                            break;
+                    }
+                }
+
+                if (header is null)
+                {
+                    ShowQueryError("The agent returned no analysis result header.");
+                    return;
+                }
+
+                if (header.State != AnalysisStateEnum.Succeeded)
+                {
+                    var errorText = header.HasErrorMessage
+                        ? header.ErrorMessage
+                        : header.State == AnalysisStateEnum.NotAnalyzed
+                            ? "The file has not been analyzed yet."
+                            : $"File analysis state = {header.State}.";
+                    ShowQueryError($"{fileName} · {header.State} · {errorText}");
+                    return;
+                }
+
+                var rows = loadedEntries
+                    .Select(LogEntryRow.FromEntry)
+                    .ToList();
+                ShowRows(rows, $"{fileName} · Succeeded · Worker {header.WorkerId} · {rows.Count} of {rows.Count} entries");
+            });
         }
 
         [RelayCommand]

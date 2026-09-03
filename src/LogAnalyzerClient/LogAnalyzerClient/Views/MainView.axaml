@@ -79,7 +79,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                         <StackPanel DockPanel.Dock="Top" Spacing="8">
                             <TextBlock Classes="SectionTitle" Text="Log Files" />
                             <TextBlock Classes="SubtleText" Text="Supports multiple selection (hold Ctrl). Right-click to view analysis results for the currently selected files." TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                 <TextBlock Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Center" Text="DoP" />
                                 <TextBox Name="DegreeTextBox"
                                          Grid.Column="1"
@@ -88,8 +88,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                          PlaceholderText="Degree of Parallelism" />
                                 <TextBlock Grid.Column="2" Margin="10,0,5,0" VerticalAlignment="Center" Text="Analyze" />
                                 <Button Grid.Column="3" Content="Selected" Command="{Binding AnalyzeSelectedFilesCommand}" />
-                                <!-- TODO: T4.1 -->
-                                <!-- Add "All" button -->
+                                <Button Grid.Column="4" Content="All" Command="{Binding AnalyzeAllCommand}" />
                             </Grid>
                         </StackPanel>
 
@@ -117,25 +116,87 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 </Border>
 
                 <Border Grid.Column="1" Classes="Card">
-                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="8">
+
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
                             <TextBlock Classes="SectionTitle" Text="Analysis Result" />
+                            <TextBlock Classes="SubtleText"
+                                       Text="Log entries are shown as a table. Info / Warning / Error cells are color-highlighted."
+                                       VerticalAlignment="Center"
+                                       TextWrapping="Wrap" />
                         </StackPanel>
 
-                        <TextBlock Grid.Row="1"
-                                   Classes="SubtleText"
-                                   Text="Analysis results. Each line is a single log entry."
-                                   TextWrapping="Wrap" />
+                        <StackPanel Grid.Row="1" Spacing="4">
+                            <TextBlock Classes="SubtleText"
+                                       Text="{Binding ResultInfo}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="StatsText"
+                                       Text="{Binding StatsText}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <!-- Query tool bar -->
+                        <Border Grid.Row="2" Classes="Toolbar">
+                            <StackPanel Spacing="8">
+                                <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,*,Auto,*" ColumnSpacing="5" RowDefinitions="Auto">
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Event type" />
+                                    <ComboBox Grid.Column="1"
+                                              MinWidth="92"
+                                              ItemsSource="{Binding EventTypeFilterOptions}"
+                                              SelectedItem="{Binding SelectedEventTypeFilter}" />
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="Severity" />
+                                    <ComboBox Grid.Column="3"
+                                              MinWidth="92"
+                                              ItemsSource="{Binding SeverityFilterOptions}"
+                                              SelectedItem="{Binding SelectedSeverityFilter}" />
+                                    <TextBlock Grid.Column="4" VerticalAlignment="Center" Text="Service / pod" />
+                                    <TextBox Grid.Column="5"
+                                             Text="{Binding ServiceNameFilter}"
+                                             PlaceholderText="e.g. gateway" />
+                                    <TextBlock Grid.Column="6" VerticalAlignment="Center" Text="Request id" />
+                                    <TextBox Grid.Column="7"
+                                             Text="{Binding RequestIdFilter}"
+                                             PlaceholderText="exact request id" />
+                                </Grid>
 
-                        <ListBox Name="ResultEntryListBox"
-                                Grid.Row="2"
-                                ItemsSource="{Binding ResultEntries, Mode=OneWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,*,Auto,Auto,Auto" ColumnSpacing="5" RowDefinitions="Auto">
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="From" />
+                                    <TextBox Grid.Column="1"
+                                             MinWidth="190"
+                                             Text="{Binding StartTimeFilter}"
+                                             PlaceholderText="2026-06-05T16:00:00Z" />
+                                    <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="To" />
+                                    <TextBox Grid.Column="3"
+                                             MinWidth="190"
+                                             Text="{Binding EndTimeFilter}"
+                                             PlaceholderText="2026-06-05T16:03:00Z" />
+                                    <Button Grid.Column="4" Classes="PrimaryButton" Content="Query" Command="{Binding QueryLogsCommand}" />
+                                    <Button Grid.Column="5" Content="Show All" Command="{Binding GetAnalysisResultCommand}" />
+                                    <Button Grid.Column="6" Content="Reset" Command="{Binding ResetFiltersCommand}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Sort tool bar -->
+                        <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,*,Auto" ColumnSpacing="5" RowDefinitions="Auto">
+                            <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Sort by" />
+                            <ComboBox Grid.Column="1"
+                                      MinWidth="150"
+                                      ItemsSource="{Binding SortKeyOptions}"
+                                      SelectedItem="{Binding SelectedSortKey}" />
+                            <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="Descending" />
+                            <CheckBox Grid.Column="3" VerticalAlignment="Center" IsChecked="{Binding SortDescending}" />
+                            <Button Grid.Column="4" Classes="PrimaryButton" Content="Apply Sort" Command="{Binding ApplySortCommand}" />
+                        </Grid>
+                        <DataGrid x:Name="ResultEntryGrid"
+                                  Grid.Row="4"
+                                  ItemsSource="{Binding ResultRows}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  CanUserSortColumns="False"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="Horizontal"
+                                  RowHeight="NaN">
+                        </DataGrid>
                     </Grid>
                 </Border>
             </Grid>
