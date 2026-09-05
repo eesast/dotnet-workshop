@@ -1,5 +1,6 @@
 ﻿using Avalonia.Controls;
 using Google.Protobuf;
+using System;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
@@ -9,12 +10,18 @@ namespace LogAnalyzerClient.Helpers
     internal interface IDialogHelper
     {
         Task<string?> ShowConnectDialogAsync(string currentAddress);
+        Task<string> ShowSaveAnalysisResultDialogAsync(string fileName);
         Task ShowMessageDialogAsync(string title, string message);
     }
 
     internal class NullDialogHelper : IDialogHelper
     {
         public Task<string?> ShowConnectDialogAsync(string currentAddress)
+        {
+            throw new ClientInternalException("Unknown error: No Window owner.");
+        }
+
+        public Task<string> ShowSaveAnalysisResultDialogAsync(string fileName)
         {
             throw new ClientInternalException("Unknown error: No Window owner.");
         }
@@ -40,6 +47,12 @@ namespace LogAnalyzerClient.Helpers
             return await dialog.ShowDialog<string?>(_owner);
         }
 
+        public async Task<string> ShowSaveAnalysisResultDialogAsync(string fileName)
+        {
+            var dialog = new SaveAnalysisResultDialog(fileName);
+            return await dialog.ShowDialog<string>(_owner);
+        }
+
         public async Task ShowMessageDialogAsync(string title, string message)
         {
             var dialog = new MessageDialog(title, message);
@@ -56,6 +69,11 @@ namespace LogAnalyzerClient.Helpers
             {
                 return BrowserInterop.Prompt("Please input the address of Agent:", currentAddress);
             });
+        }
+
+        public Task<string> ShowSaveAnalysisResultDialogAsync(string fileName)
+        {
+            throw new PlatformNotSupportedException("Saving analysis results is only supported by the Desktop client.");
         }
 
         public async Task ShowMessageDialogAsync(string title, string message)

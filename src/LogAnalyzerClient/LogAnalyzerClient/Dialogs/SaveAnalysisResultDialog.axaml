@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="LogAnalyzerClient.SaveAnalysisResultDialog"
+        d:DesignWidth="520" d:DesignHeight="230"
+        Width="520" Height="230"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Title="Save Analysis Result">
+    <Grid Margin="15" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+        <TextBlock Grid.Row="0"
+                   TextWrapping="Wrap">
+            <Run Text="Save the analysis result for " />
+            <Run Name="FileNameRun" FontWeight="SemiBold" />
+            <Run Text=" as a Parquet file." />
+        </TextBlock>
+
+        <TextBlock Grid.Row="1"
+                   Classes="SubtleText"
+                   Text="Enter an existing directory path on the Agent machine. Relative paths use the Agent working directory."
+                   TextWrapping="Wrap" />
+
+        <TextBox Grid.Row="2"
+                 Name="DirectoryPathTextBox"
+                 PlaceholderText="e.g. D:\exports or ./exports"
+                 TextChanged="DirectoryPathTextBox_TextChanged" />
+
+        <Button Grid.Row="3"
+                Name="SaveButton"
+                Classes="PrimaryButton"
+                Content="Save"
+                HorizontalAlignment="Right"
+                IsDefault="True"
+                IsEnabled="False"
+                Click="SaveButton_Click" />
+    </Grid>
+</Window>

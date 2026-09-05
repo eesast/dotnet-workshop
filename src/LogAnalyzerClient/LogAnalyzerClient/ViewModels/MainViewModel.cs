@@ -308,6 +308,37 @@ namespace LogAnalyzerClient.ViewModels
         }
 
         [RelayCommand]
+        private async Task SaveAnalysisResultAsync()
+        {
+            await WithClientNotNull(async () =>
+            {
+                if (SelectedLogFile is null)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error", "No selected file to save.");
+                    return;
+                }
+
+                string directoryPath = await DialogHelper.ShowSaveAnalysisResultDialogAsync(SelectedLogFile.FileName);
+                var request = new SaveAnalysisResultRequest
+                {
+                    FileName = SelectedLogFile.FileName,
+                    DirectoryPath = directoryPath
+                };
+
+                var response = await _client!.SaveAnalysisResultAsync(request);
+                if (!response.Status.Success)
+                {
+                    await DialogHelper.ShowMessageDialogAsync("Error",
+                        $"{response.Status.Code}: {response.Status.Message}");
+                    return;
+                }
+
+                await DialogHelper.ShowMessageDialogAsync("Saved",
+                    $"Analysis result saved successfully.\n\n{response.OutputFilePath}");
+            });
+        }
+
+        [RelayCommand]
         private async Task AboutAsync()
         {
             await DialogHelper.ShowMessageDialogAsync("About",
