@@ -242,5 +242,52 @@ namespace LogAnalyzerAgent.Applications
             }
             return responses;
         }
+
+        public async Task<SaveAnalysisResultResponse> SaveAnalysisResult(SaveAnalysisResultRequest request, CancellationToken cancellationToken)
+        {
+            var response = new SaveAnalysisResultResponse();
+            try
+            {
+                await _analyzer.SaveAnalysisResultAsync(request.FileName, request.DirectoryPath);
+                response.Status = CreateNoErrorOperationStatus();
+            }
+            catch (FileNotFoundException ex)
+            {
+                response.Status = new OperationStatusMessage
+                {
+                    Success = false,
+                    Code = AgentErrorCode.FileNotFound,
+                    Message = ex.Message
+                };
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                response.Status = new OperationStatusMessage
+                {
+                    Success = false,
+                    Code = AgentErrorCode.DirectoryNotFound,
+                    Message = ex.Message
+                };
+            }
+            catch (ArgumentException ex)
+            {
+                response.Status = CreateInvalidArgumentOperationStatus(ex);
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Status = new OperationStatusMessage
+                {
+                    Success = false,
+                    Code = AgentErrorCode.InvalidOperation,
+                    Message = ex.Message
+                };
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(ex);
+                _logger.LogError(ex, "An error occurred while saving analysis result.");
+            }
+            return response;
+        }
     }
 }

@@ -55,5 +55,10 @@ namespace LogAnalyzerAgent.Services
                 await responseStream.WriteAsync(response);
             }
         }
+
+        public override Task<SaveAnalysisResultResponse> SaveAnalysisResult(SaveAnalysisResultRequest request, ServerCallContext context)
+        {
+            return _session.SaveAnalysisResult(request, context.CancellationToken);
+        }
     }
 }
