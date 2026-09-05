@@ -7,7 +7,6 @@ using LogAnalyzerClient.Models;
 using LogAnalyzerClient.Services;
 using LogAnalyzerRpc;
 using LogAnalyzerRpc.Protos;
-using LogParser.Visitors;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -54,7 +53,7 @@ namespace LogAnalyzerClient.ViewModels
         private LogFileItem? _selectedLogFile = null;
 
         [ObservableProperty]
-        private ObservableCollection<LogFields> _resultEntries = new();
+        private ObservableCollection<LogEntryRow> _resultEntries = new();
 
         [RelayCommand]
         private async Task ConnectAsync()
@@ -258,7 +257,7 @@ namespace LogAnalyzerClient.ViewModels
                 };
 
                 using var call = _client!.GetAnalysisResult(request);
-                var index = 0;
+                var analysisSucceeded = false;
                 await foreach (var response in call.ResponseStream.ReadAllAsync())
                 {
                     if (!response.Status.Success)
@@ -274,33 +273,30 @@ namespace LogAnalyzerClient.ViewModels
                             var state = GrpcTypeConverter.ConvertFromGrpc(response.Header.State);
                             if (state == LogAnalyzer.AnalysisState.NotAnalyzed)
                             {
-                                ResultEntries.Add(new LogFields(index, new List<LogFieldItem>(), $"{fileName} has not been analyzed yet."));
+                                await DialogHelper.ShowMessageDialogAsync(
+                                    "Analysis Result",
+                                    $"{fileName} has not been analyzed yet.");
                                 break;
                             }
                             else if (state == LogAnalyzer.AnalysisState.Failed)
                             {
-                                ResultEntries.Add(new LogFields(index, new List<LogFieldItem>(), $"{fileName} analysis failed.\n"
-                                + $"Error message: {response.Header.ErrorMessage}\n"
-                                + $"Worker ID: {response.Header.WorkerId}"));
+                                await DialogHelper.ShowMessageDialogAsync(
+                                    "Analysis Failed",
+                                    $"{fileName} analysis failed.\n"
+                                    + $"Error message: {response.Header.ErrorMessage}\n"
+                                    + $"Worker ID: {response.Header.WorkerId}");
                                 break;
                             }
                             else if (state == LogAnalyzer.AnalysisState.Succeeded)
                             {
-                                ResultEntries.Add(new LogFields(index, new List<LogFieldItem>(), $"File: {fileName}, Worker ID: {response.Header.WorkerId}"));
+                                analysisSucceeded = true;
                             }
                         }
-                        else if (response.PayloadCase == GetAnalysisResultResponse.PayloadOneofCase.LogEntry)
+                        else if (analysisSucceeded
+                            && response.PayloadCase == GetAnalysisResultResponse.PayloadOneofCase.LogEntry)
                         {
                             var logEntry = GrpcTypeConverter.ConvertFromGrpc(response.LogEntry);
-                            var logFieldItems = new List<LogFieldItem>();
-                            var visitor = new KeyValueVisitor();
-                            var dumpedInfo = visitor.Dump(logEntry);
-                            foreach (var item in dumpedInfo)
-                            {
-                                logFieldItems.Add(new LogFieldItem(item.Key, item.Value));
-                            }
-                            ResultEntries.Add(new LogFields(index, logFieldItems, null));
-                            index++;
+                            ResultEntries.Add(LogEntryRow.FromLogEntry(logEntry));
                         }
                     }
                 }

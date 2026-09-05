@@ -117,7 +117,7 @@
                     </DockPanel>
                 </Border>
 
-                <Border Grid.Column="1" Classes="Card">
+                <Border Grid.Column="1" Classes="Card" MinWidth="0">
                     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
                             <TextBlock Classes="SectionTitle" Text="Analysis Result" />
@@ -125,18 +125,63 @@
 
                         <TextBlock Grid.Row="1"
                                    Classes="SubtleText"
-                                   Text="Analysis results. Each line is a single log entry."
+                                   Text="Successful analysis results. Row color indicates log severity."
                                    TextWrapping="Wrap" />
 
-                        <ListBox Name="ResultEntryListBox"
-                                 Grid.Row="2"
-                                 ItemsSource="{Binding ResultEntries, Mode=OneWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                        <ScrollViewer Grid.Row="2"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled">
+                            <DockPanel Width="1655">
+                                <Border DockPanel.Dock="Top" Classes="LogTableHeader">
+                                    <Grid ColumnDefinitions="55,180,120,80,90,150,130,80,80,220,70,140,260">
+                                        <TextBlock Grid.Column="0" Classes="LogTableHeaderCell" Text="Line" />
+                                        <TextBlock Grid.Column="1" Classes="LogTableHeaderCell" Text="Timestamp" />
+                                        <TextBlock Grid.Column="2" Classes="LogTableHeaderCell" Text="Pod" />
+                                        <TextBlock Grid.Column="3" Classes="LogTableHeaderCell" Text="Severity" />
+                                        <TextBlock Grid.Column="4" Classes="LogTableHeaderCell" Text="Event" />
+                                        <TextBlock Grid.Column="5" Classes="LogTableHeaderCell" Text="Request ID" />
+                                        <TextBlock Grid.Column="6" Classes="LogTableHeaderCell" Text="Target Service" />
+                                        <TextBlock Grid.Column="7" Classes="LogTableHeaderCell" Text="Duration" />
+                                        <TextBlock Grid.Column="8" Classes="LogTableHeaderCell" Text="Method" />
+                                        <TextBlock Grid.Column="9" Classes="LogTableHeaderCell" Text="Path" />
+                                        <TextBlock Grid.Column="10" Classes="LogTableHeaderCell" Text="Status" />
+                                        <TextBlock Grid.Column="11" Classes="LogTableHeaderCell" Text="Exception" />
+                                        <TextBlock Grid.Column="12" Classes="LogTableHeaderCell" Text="Message" />
+                                    </Grid>
+                                </Border>
+
+                                <ListBox Name="ResultEntryListBox"
+                                         Classes="ResultTable"
+                                         ItemsSource="{Binding ResultEntries, Mode=OneWay}"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:LogEntryRow">
+                                            <Border Classes="LogEntryRow"
+                                                    Classes.Info="{Binding IsInfo}"
+                                                    Classes.Warning="{Binding IsWarning}"
+                                                    Classes.Error="{Binding IsError}">
+                                                <Grid ColumnDefinitions="55,180,120,80,90,150,130,80,80,220,70,140,260">
+                                                    <TextBlock Grid.Column="0" Classes="LogTableCell" Text="{Binding LineNo}" />
+                                                    <TextBlock Grid.Column="1" Classes="LogTableCell" Text="{Binding TimestampText}" />
+                                                    <TextBlock Grid.Column="2" Classes="LogTableCell" Text="{Binding PodName}" ToolTip.Tip="{Binding PodName}" />
+                                                    <TextBlock Grid.Column="3" Classes="LogTableCell" Text="{Binding Severity}" />
+                                                    <TextBlock Grid.Column="4" Classes="LogTableCell" Text="{Binding EventType}" />
+                                                    <TextBlock Grid.Column="5" Classes="LogTableCell" Text="{Binding RequestId}" ToolTip.Tip="{Binding RequestId}" />
+                                                    <TextBlock Grid.Column="6" Classes="LogTableCell" Text="{Binding TargetService}" ToolTip.Tip="{Binding TargetService}" />
+                                                    <TextBlock Grid.Column="7" Classes="LogTableCell" Text="{Binding DurationMs}" />
+                                                    <TextBlock Grid.Column="8" Classes="LogTableCell" Text="{Binding Method}" />
+                                                    <TextBlock Grid.Column="9" Classes="LogTableCell" Text="{Binding Path}" ToolTip.Tip="{Binding Path}" />
+                                                    <TextBlock Grid.Column="10" Classes="LogTableCell" Text="{Binding StatusCode}" />
+                                                    <TextBlock Grid.Column="11" Classes="LogTableCell" Text="{Binding ExceptionName}" ToolTip.Tip="{Binding ExceptionName}" />
+                                                    <TextBlock Grid.Column="12" Classes="LogTableCell" Text="{Binding ExceptionMessage}" ToolTip.Tip="{Binding ExceptionMessage}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </DockPanel>
+                        </ScrollViewer>
                     </Grid>
                 </Border>
             </Grid>
