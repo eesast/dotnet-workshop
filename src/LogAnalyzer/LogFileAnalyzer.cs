@@ -101,7 +101,7 @@ namespace LogAnalyzer
             }
         }
 
-        public async Task SaveAnalysisResultAsync(string fileName, string directoryPath)
+        public async Task<string> SaveAnalysisResultAsync(string fileName, string directoryPath)
         {
             if (string.IsNullOrWhiteSpace(directoryPath))
                 throw new ArgumentException("Output directory path cannot be empty.", nameof(directoryPath));
@@ -147,6 +147,7 @@ namespace LogAnalyzer
                 }
 
                 File.Move(temporaryFilePath, outputFilePath, overwrite: false);
+                return outputFilePath;
             }
             finally
             {

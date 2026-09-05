@@ -58,7 +58,7 @@ namespace LogAnalyzerAgent.Services
 
         public override Task<SaveAnalysisResultResponse> SaveAnalysisResult(SaveAnalysisResultRequest request, ServerCallContext context)
         {
-            return _session.SaveAnalysisResult(request, context.CancellationToken);
+            return _session.SaveAnalysisResult(request);
         }
     }
 }

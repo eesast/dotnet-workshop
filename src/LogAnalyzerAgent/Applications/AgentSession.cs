@@ -243,12 +243,12 @@ namespace LogAnalyzerAgent.Applications
             return responses;
         }
 
-        public async Task<SaveAnalysisResultResponse> SaveAnalysisResult(SaveAnalysisResultRequest request, CancellationToken cancellationToken)
+        public async Task<SaveAnalysisResultResponse> SaveAnalysisResult(SaveAnalysisResultRequest request)
         {
             var response = new SaveAnalysisResultResponse();
             try
             {
-                await _analyzer.SaveAnalysisResultAsync(request.FileName, request.DirectoryPath);
+                response.OutputFilePath = await _analyzer.SaveAnalysisResultAsync(request.FileName, request.DirectoryPath);
                 response.Status = CreateNoErrorOperationStatus();
             }
             catch (FileNotFoundException ex)

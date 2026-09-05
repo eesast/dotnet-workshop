@@ -159,4 +159,5 @@ message SaveAnalysisResultRequest {
 
 message SaveAnalysisResultResponse {
 	OperationStatusMessage status = 1;
+	string output_file_path = 2;
 }
