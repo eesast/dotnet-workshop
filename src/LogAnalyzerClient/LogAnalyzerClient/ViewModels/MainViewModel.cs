@@ -37,7 +37,6 @@ namespace LogAnalyzerClient.ViewModels
         [ObservableProperty]
         private string _currentAddress = "";
 
-        [ObservableProperty]
         private string _token = "";
         private static class ConnectStatusString
         {
@@ -61,7 +60,7 @@ namespace LogAnalyzerClient.ViewModels
         [RelayCommand]
         private async Task ConnectAsync()
         {
-            var connectInfo = await DialogHelper.ShowConnectDialogAsync(CurrentAddress, Token);
+            var connectInfo = await DialogHelper.ShowConnectDialogAsync(CurrentAddress, _token);
             if (connectInfo is null)
             {
                 // Do nothing if the user cancels the dialog
@@ -82,7 +81,7 @@ namespace LogAnalyzerClient.ViewModels
                     _client = AppService.ClientFactory.CreateClient(connectInfo.Address, connectInfo.Token);
                     await _client.PingAsync(new Empty());
                     CurrentAddress = connectInfo.Address;
-                    Token = connectInfo.Token;
+                    _token = connectInfo.Token;
                     ConnectStatus = ConnectStatusString.CONNECTED;
                     LogFiles.Clear();
                 }
