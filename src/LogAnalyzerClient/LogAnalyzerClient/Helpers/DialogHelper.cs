@@ -3,6 +3,7 @@ using Google.Protobuf;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using System.Threading.Tasks;
+using Avalonia.Platform.Storage;
 
 namespace LogAnalyzerClient.Helpers
 {
@@ -10,6 +11,7 @@ namespace LogAnalyzerClient.Helpers
     {
         Task<string?> ShowConnectDialogAsync(string currentAddress);
         Task ShowMessageDialogAsync(string title, string message);
+        Task<string?> ShowSaveFileDialogAsync(string suggestedFileName);
     }
 
     internal class NullDialogHelper : IDialogHelper
@@ -20,6 +22,11 @@ namespace LogAnalyzerClient.Helpers
         }
 
         public Task ShowMessageDialogAsync(string title, string message)
+        {
+            throw new ClientInternalException("Unknown error: No Window owner.");
+        }
+
+        public Task<string?> ShowSaveFileDialogAsync(string suggestedFileName)
         {
             throw new ClientInternalException("Unknown error: No Window owner.");
         }
@@ -45,6 +52,30 @@ namespace LogAnalyzerClient.Helpers
             var dialog = new MessageDialog(title, message);
             await dialog.ShowDialog(_owner);
         }
+
+        public async Task<string?> ShowSaveFileDialogAsync(string suggestedFileName)
+        {
+            var storageProvider = TopLevel.GetTopLevel(_owner)?.StorageProvider;
+            if (storageProvider is null)
+            {
+                return null;
+            }
+
+            var file = await storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                Title = "Export JSON",
+                SuggestedFileName = suggestedFileName,
+                DefaultExtension = "json",
+                FileTypeChoices =
+                [
+                    new FilePickerFileType("JSON files")
+                    {
+                        Patterns = ["*.json"],
+                    }
+                ],
+            });
+            return file?.TryGetLocalPath();
+        }
     }
 
     [SupportedOSPlatform("browser")]
@@ -63,6 +94,14 @@ namespace LogAnalyzerClient.Helpers
             await Task.Run(() =>
             {
                 BrowserInterop.Alert($"[{title}]\n\n{message}");
+            });
+        }
+
+        public async Task<string?> ShowSaveFileDialogAsync(string suggestedFileName)
+        {
+            return await Task.Run(() =>
+            {
+                return BrowserInterop.Prompt("Please input export file path:", suggestedFileName);
             });
         }
     }

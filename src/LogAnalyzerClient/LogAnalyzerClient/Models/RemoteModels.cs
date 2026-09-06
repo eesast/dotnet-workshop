@@ -9,10 +9,37 @@ namespace LogAnalyzerClient.Models
         public override string ToString() => FileName;
     }
 
-    public sealed record LogFields(int Index, IReadOnlyList<LogFieldItem> Fields, string? ErrorMessage)
+    public sealed record LogTableRow(
+        string LineNo,
+        string Timestamp,
+        string PodName,
+        string Severity,
+        string EventType,
+        string RequestId,
+        string TargetService,
+        string DurationMs,
+        string Method,
+        string Path,
+        string StatusCode,
+        string ExceptionName,
+        string ExceptionMessage)
     {
-        public string Summary => "TODO: T4.1";
+        public static LogTableRow FromFields(IReadOnlyDictionary<string, string> fields)
+        {
+            return new LogTableRow(
+                LineNo: fields.GetValueOrDefault("LineNo", ""),
+                Timestamp: fields.GetValueOrDefault("Timestamp", ""),
+                PodName: fields.GetValueOrDefault("PodName", ""),
+                Severity: fields.GetValueOrDefault("Severity", ""),
+                EventType: fields.GetValueOrDefault("EventType", ""),
+                RequestId: fields.GetValueOrDefault("RequestId", ""),
+                TargetService: fields.GetValueOrDefault("TargetService", ""),
+                DurationMs: fields.GetValueOrDefault("DurationMs", ""),
+                Method: fields.GetValueOrDefault("Method", ""),
+                Path: fields.GetValueOrDefault("Path", ""),
+                StatusCode: fields.GetValueOrDefault("StatusCode", ""),
+                ExceptionName: fields.GetValueOrDefault("ExceptionName", ""),
+                ExceptionMessage: fields.GetValueOrDefault("ExceptionMessage", ""));
+        }
     }
-
-    public sealed record LogFieldItem(string Key, string Value);
 }

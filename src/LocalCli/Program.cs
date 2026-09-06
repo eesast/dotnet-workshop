@@ -36,7 +36,7 @@ namespace LocalCli
                     }
                     break;
                 }
-                catch (ArgumentException)
+                catch (Exception)
                 {
                     Console.WriteLine("Directory illegal, please try again:");
                     continue;
@@ -112,22 +112,121 @@ namespace LocalCli
 
         private static void ShowLogFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            var logFiles = analyzer.GetLogFiles();
+            if (logFiles.Count == 0)
+            {
+                Console.WriteLine("No log files found in the current directory.");
+                return;
+            }
+
+            Console.WriteLine("Log files:");
+            foreach (var fileName in logFiles)
+            {
+                Console.WriteLine(fileName);
+            }
         }
 
         private static void AnalyzeFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            while (true)
+            {
+                Console.WriteLine("Please input file names to analyze (separated by comma):");
+                var input = Console.ReadLine();
+                if (input is null)
+                {
+                    return;
+                }
+
+                var fileNames = input.Split(',')
+                    .Select(name => name.Trim())
+                    .Where(name => !string.IsNullOrEmpty(name))
+                    .ToList();
+                if (fileNames.Count == 0)
+                {
+                    Console.WriteLine("No valid file names, please try again.");
+                    continue;
+                }
+
+                try
+                {
+                    analyzer.AnalyzeFiles(0, fileNames);
+                    Console.WriteLine("Analysis finished.");
+                    return;
+                }
+                catch (ArgumentException ex)
+                {
+                    Console.WriteLine($"Invalid file name: {ex.Message}");
+                }
+                catch (InvalidOperationException ex)
+                {
+                    Console.WriteLine($"Cannot analyze right now: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Unexpected error: {ex.Message}");
+                }
+            }
         }
 
         private static void AnalyzeAll(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            try
+            {
+                analyzer.AnalyzeAll(0);
+                Console.WriteLine("Analysis finished.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine($"Cannot analyze right now: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error: {ex.Message}");
+            }
         }
 
         private static void GetAnalysisResult(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            while (true)
+            {
+                Console.WriteLine("Please input file name to get analysis result:");
+                var fileName = Console.ReadLine();
+                if (fileName is null)
+                {
+                    return;
+                }
+
+                if (!analyzer.TryGetAnalysisResult(fileName, out var result) || result is null)
+                {
+                    var logFiles = analyzer.GetLogFiles();
+                    Console.WriteLine($"File '{fileName}' not found.");
+                    Console.WriteLine(logFiles.Count == 0
+                        ? "No log files in the current directory."
+                        : $"Available files: {string.Join(", ", logFiles)}");
+                    continue;
+                }
+
+                switch (result.State)
+                {
+                    case AnalysisState.NotAnalyzed:
+                        Console.WriteLine($"File '{fileName}' has not been analyzed yet.");
+                        break;
+                    case AnalysisState.Succeeded:
+                        Console.WriteLine($"File '{fileName}' analysis succeeded, {result.Entries.Count} entries:");
+                        var visitor = new KeyValueVisitor();
+                        foreach (var entry in result.Entries)
+                        {
+                            var keyValues = visitor.Dump(entry)
+                                .Select(pair => $"{pair.Key}: {pair.Value}");
+                            Console.WriteLine(string.Join(", ", keyValues));
+                        }
+                        break;
+                    case AnalysisState.Failed:
+                        Console.WriteLine($"File '{fileName}' analysis failed: {result.ErrorMessage}");
+                        break;
+                }
+                return;
+            }
         }
     }
 }
