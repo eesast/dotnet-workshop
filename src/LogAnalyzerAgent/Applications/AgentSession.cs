@@ -38,6 +38,16 @@ namespace LogAnalyzerAgent.Applications
             };
         }
 
+        private static OperationStatusMessage CreateErrorOperationStatus(AgentErrorCode code, string message)
+        {
+            return new OperationStatusMessage()
+            {
+                Success = false,
+                Code = code,
+                Message = message,
+            };
+        }
+
         public Task<Empty> Ping(Empty empty, CancellationToken cancellationToken)
         {
             return Task.FromResult(new Empty());
@@ -79,22 +89,194 @@ namespace LogAnalyzerAgent.Applications
 
         public Task<ChangeDirectoryResponse> ChangeDirectory(ChangeDirectoryRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new ChangeDirectoryResponse();
+            try
+            {
+                var directoryPath = request.DirectoryPath;
+                if (!_analyzer.ChangeDirectory(string.IsNullOrEmpty(directoryPath) ? null : directoryPath))
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.DirectoryNotFound,
+                        $"Directory not found: {directoryPath}");
+                    return Task.FromResult(response);
+                }
+
+                response.Status = CreateNoErrorOperationStatus();
+                response.CurrentDirectory = _analyzer.CurrentDirectory ?? "";
+                response.FileNames.AddRange(_analyzer.GetLogFiles());
+            }
+            catch (ArgumentException ex)
+            {
+                response.Status = CreateErrorOperationStatus(AgentErrorCode.InvalidArgument, ex.Message);
+                _logger.LogError(ex, "Invalid directory path from client.");
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateErrorOperationStatus(
+                    AgentErrorCode.InternalError,
+                    $"An error occurred while changing directory: {ex.Message}");
+                _logger.LogError(ex, "An error occurred while changing directory.");
+            }
+            return Task.FromResult(response);
         }
 
         public Task<AnalyzeAllResponse> AnalyzeAll(AnalyzeAllRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new AnalyzeAllResponse();
+            try
+            {
+                if (!_analyzer.HasDirectory)
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidOperation,
+                        "No directory has been set.");
+                    return Task.FromResult(response);
+                }
+                if (request.DegreeOfParallelism < 0)
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidArgument,
+                        "Degree of parallelism must be non-negative.");
+                    return Task.FromResult(response);
+                }
+
+                _analyzer.AnalyzeAll(request.DegreeOfParallelism);
+                response.Status = CreateNoErrorOperationStatus();
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Status = CreateErrorOperationStatus(AgentErrorCode.InvalidOperation, ex.Message);
+                _logger.LogError(ex, "Invalid analyze-all operation from client.");
+            }
+            catch (ArgumentException ex)
+            {
+                response.Status = CreateErrorOperationStatus(AgentErrorCode.InvalidArgument, ex.Message);
+                _logger.LogError(ex, "Invalid analyze-all argument from client.");
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateErrorOperationStatus(
+                    AgentErrorCode.InternalError,
+                    $"An error occurred while analyzing all files: {ex.Message}");
+                _logger.LogError(ex, "An error occurred while analyzing all files.");
+            }
+            return Task.FromResult(response);
         }
 
         public Task<AnalyzeFilesResponse> AnalyzeFiles(AnalyzeFilesRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new AnalyzeFilesResponse();
+            try
+            {
+                if (!_analyzer.HasDirectory)
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidOperation,
+                        "No directory has been set.");
+                    return Task.FromResult(response);
+                }
+                if (request.DegreeOfParallelism < 0)
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidArgument,
+                        "Degree of parallelism must be non-negative.");
+                    return Task.FromResult(response);
+                }
+                if (request.FileNames.Count == 0)
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidArgument,
+                        "No file names specified.");
+                    return Task.FromResult(response);
+                }
+
+                _analyzer.AnalyzeFiles(request.DegreeOfParallelism, request.FileNames);
+                response.Status = CreateNoErrorOperationStatus();
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Status = CreateErrorOperationStatus(AgentErrorCode.InvalidOperation, ex.Message);
+                _logger.LogError(ex, "Invalid analyze-files operation from client.");
+            }
+            catch (ArgumentException ex)
+            {
+                response.Status = CreateErrorOperationStatus(AgentErrorCode.FileNotFound, ex.Message);
+                _logger.LogError(ex, "File not found while analyzing files.");
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateErrorOperationStatus(
+                    AgentErrorCode.InternalError,
+                    $"An error occurred while analyzing files: {ex.Message}");
+                _logger.LogError(ex, "An error occurred while analyzing files.");
+            }
+            return Task.FromResult(response);
         }
 
         public IReadOnlyList<GetAnalysisResultResponse> GetAnalysisResult(GetAnalysisResultRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            try
+            {
+                if (!_analyzer.TryGetAnalysisResult(request.FileName, out var analysisResult) || analysisResult is null)
+                {
+                    return
+                    [
+                        new GetAnalysisResultResponse()
+                        {
+                            Status = CreateErrorOperationStatus(
+                                AgentErrorCode.FileNotFound,
+                                $"File not found: {request.FileName}"),
+                        }
+                    ];
+                }
+
+                var header = new AnalysisResultHeaderMessage()
+                {
+                    FileName = analysisResult.FileName,
+                    FullName = analysisResult.FullName,
+                    State = GrpcTypeConverter.ConvertToGrpc(analysisResult.State),
+                    WorkerId = analysisResult.WorkerId,
+                };
+                if (analysisResult.ErrorMessage is not null)
+                {
+                    header.ErrorMessage = analysisResult.ErrorMessage;
+                }
+
+                var responses = new List<GetAnalysisResultResponse>
+                {
+                    new()
+                    {
+                        Header = header,
+                        Status = CreateNoErrorOperationStatus(),
+                    }
+                };
+
+                if (analysisResult.State == AnalysisState.Succeeded)
+                {
+                    foreach (var entry in analysisResult.Entries)
+                    {
+                        responses.Add(new GetAnalysisResultResponse()
+                        {
+                            LogEntry = GrpcTypeConverter.ConvertToGrpc(entry),
+                            Status = CreateNoErrorOperationStatus(),
+                        });
+                    }
+                }
+                return responses;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while getting analysis result.");
+                return
+                [
+                    new GetAnalysisResultResponse()
+                    {
+                        Status = CreateErrorOperationStatus(
+                            AgentErrorCode.InternalError,
+                            $"An error occurred while getting analysis result: {ex.Message}"),
+                    }
+                ];
+            }
         }
     }
 }
