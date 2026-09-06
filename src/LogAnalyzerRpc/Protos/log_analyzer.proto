@@ -15,6 +15,7 @@ service LogAnalyzerAgentService {
 	rpc AnalyzeAll(AnalyzeAllRequest) returns (AnalyzeAllResponse);
 	rpc AnalyzeFiles(AnalyzeFilesRequest) returns (AnalyzeFilesResponse);
 	rpc GetAnalysisResult(GetAnalysisResultRequest) returns (stream GetAnalysisResultResponse);
+	rpc SaveAnalysisResult(SaveAnalysisResultRequest) returns (SaveAnalysisResultResponse);
 }
 
 enum AgentErrorCode {
@@ -149,4 +150,14 @@ message GetAnalysisResultResponse {
 		LogEntryMessage log_entry = 2;
 	}
 	OperationStatusMessage status = 3;
+}
+
+message SaveAnalysisResultRequest {
+	string file_name = 1;
+	string directory_path = 2;
+}
+
+message SaveAnalysisResultResponse {
+	OperationStatusMessage status = 1;
+	string output_file_path = 2;
 }

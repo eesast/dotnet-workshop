@@ -1,15 +1,15 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-                xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-                xmlns:vm="using:LogAnalyzerClient.ViewModels"
-                xmlns:models="using:LogAnalyzerClient.Models"
-                mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-                x:Class="LogAnalyzerClient.Views.MainView"
-                x:DataType="vm:MainViewModel">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:LogAnalyzerClient.ViewModels"
+             xmlns:models="using:LogAnalyzerClient.Models"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="LogAnalyzerClient.Views.MainView"
+             x:DataType="vm:MainViewModel">
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
-to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainViewModel />
     </Design.DataContext>
 
@@ -49,7 +49,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 Grid.Row="0"
                 Grid.Column="0"
                 Spacing="4"
-            >
+                >
                 <TextBlock Classes="TitleText" Text="LogAnalyzerClient" />
                 <TextBlock Classes="SubtleText" Text="GUI remote client of LogAnalyzer." />
             </StackPanel>
@@ -58,7 +58,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 Grid.Row="1"
                 Grid.Column="0"
                 Classes="Card"
-            >
+                >
                 <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="5" RowSpacing="5">
                     <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Directory Path" />
                     <TextBox Grid.Row="0" Grid.Column="1"
@@ -79,7 +79,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                         <StackPanel DockPanel.Dock="Top" Spacing="8">
                             <TextBlock Classes="SectionTitle" Text="Log Files" />
                             <TextBlock Classes="SubtleText" Text="Supports multiple selection (hold Ctrl). Right-click to view analysis results for the currently selected files." TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                                 <TextBlock Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Center" Text="DoP" />
                                 <TextBox Name="DegreeTextBox"
                                          Grid.Column="1"
@@ -88,8 +88,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                          PlaceholderText="Degree of Parallelism" />
                                 <TextBlock Grid.Column="2" Margin="10,0,5,0" VerticalAlignment="Center" Text="Analyze" />
                                 <Button Grid.Column="3" Content="Selected" Command="{Binding AnalyzeSelectedFilesCommand}" />
-                                <!-- TODO: T4.1 -->
-                                <!-- Add "All" button -->
+                                <Button Grid.Column="4" Content="All" Command="{Binding AnalyzeAllCommand}" />
                             </Grid>
                         </StackPanel>
 
@@ -105,6 +104,8 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                 <ContextMenu>
                                     <MenuItem Header="Analyze File(_A)" Command="{Binding AnalyzeRightClickedFileCommand}"/>
                                     <MenuItem Header="View Analysis Results(_V)" Command="{Binding GetAnalysisResultCommand}" />
+                                    <MenuItem Header="Save Analysis Result as Parquet...(_S)"
+                                              Command="{Binding SaveAnalysisResultCommand}" />
                                 </ContextMenu>
                             </ListBox.ContextMenu>
                             <ListBox.ItemTemplate>
@@ -116,7 +117,7 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                     </DockPanel>
                 </Border>
 
-                <Border Grid.Column="1" Classes="Card">
+                <Border Grid.Column="1" Classes="Card" MinWidth="0">
                     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
                             <TextBlock Classes="SectionTitle" Text="Analysis Result" />
@@ -124,18 +125,63 @@ to set the actual DataContext for runtime, set the DataContext property in code 
 
                         <TextBlock Grid.Row="1"
                                    Classes="SubtleText"
-                                   Text="Analysis results. Each line is a single log entry."
+                                   Text="Successful analysis results. Row color indicates log severity."
                                    TextWrapping="Wrap" />
 
-                        <ListBox Name="ResultEntryListBox"
-                                Grid.Row="2"
-                                ItemsSource="{Binding ResultEntries, Mode=OneWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                        <ScrollViewer Grid.Row="2"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled">
+                            <DockPanel Width="1655">
+                                <Border DockPanel.Dock="Top" Classes="LogTableHeader">
+                                    <Grid ColumnDefinitions="55,180,120,80,90,150,130,80,80,220,70,140,260">
+                                        <TextBlock Grid.Column="0" Classes="LogTableHeaderCell" Text="Line" />
+                                        <TextBlock Grid.Column="1" Classes="LogTableHeaderCell" Text="Timestamp" />
+                                        <TextBlock Grid.Column="2" Classes="LogTableHeaderCell" Text="Pod" />
+                                        <TextBlock Grid.Column="3" Classes="LogTableHeaderCell" Text="Severity" />
+                                        <TextBlock Grid.Column="4" Classes="LogTableHeaderCell" Text="Event" />
+                                        <TextBlock Grid.Column="5" Classes="LogTableHeaderCell" Text="Request ID" />
+                                        <TextBlock Grid.Column="6" Classes="LogTableHeaderCell" Text="Target Service" />
+                                        <TextBlock Grid.Column="7" Classes="LogTableHeaderCell" Text="Duration" />
+                                        <TextBlock Grid.Column="8" Classes="LogTableHeaderCell" Text="Method" />
+                                        <TextBlock Grid.Column="9" Classes="LogTableHeaderCell" Text="Path" />
+                                        <TextBlock Grid.Column="10" Classes="LogTableHeaderCell" Text="Status" />
+                                        <TextBlock Grid.Column="11" Classes="LogTableHeaderCell" Text="Exception" />
+                                        <TextBlock Grid.Column="12" Classes="LogTableHeaderCell" Text="Message" />
+                                    </Grid>
+                                </Border>
+
+                                <ListBox Name="ResultEntryListBox"
+                                         Classes="ResultTable"
+                                         ItemsSource="{Binding ResultEntries, Mode=OneWay}"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:LogEntryRow">
+                                            <Border Classes="LogEntryRow"
+                                                    Classes.Info="{Binding IsInfo}"
+                                                    Classes.Warning="{Binding IsWarning}"
+                                                    Classes.Error="{Binding IsError}">
+                                                <Grid ColumnDefinitions="55,180,120,80,90,150,130,80,80,220,70,140,260">
+                                                    <TextBlock Grid.Column="0" Classes="LogTableCell" Text="{Binding LineNo}" />
+                                                    <TextBlock Grid.Column="1" Classes="LogTableCell" Text="{Binding TimestampText}" />
+                                                    <TextBlock Grid.Column="2" Classes="LogTableCell" Text="{Binding PodName}" ToolTip.Tip="{Binding PodName}" />
+                                                    <TextBlock Grid.Column="3" Classes="LogTableCell" Text="{Binding Severity}" />
+                                                    <TextBlock Grid.Column="4" Classes="LogTableCell" Text="{Binding EventType}" />
+                                                    <TextBlock Grid.Column="5" Classes="LogTableCell" Text="{Binding RequestId}" ToolTip.Tip="{Binding RequestId}" />
+                                                    <TextBlock Grid.Column="6" Classes="LogTableCell" Text="{Binding TargetService}" ToolTip.Tip="{Binding TargetService}" />
+                                                    <TextBlock Grid.Column="7" Classes="LogTableCell" Text="{Binding DurationMs}" />
+                                                    <TextBlock Grid.Column="8" Classes="LogTableCell" Text="{Binding Method}" />
+                                                    <TextBlock Grid.Column="9" Classes="LogTableCell" Text="{Binding Path}" ToolTip.Tip="{Binding Path}" />
+                                                    <TextBlock Grid.Column="10" Classes="LogTableCell" Text="{Binding StatusCode}" />
+                                                    <TextBlock Grid.Column="11" Classes="LogTableCell" Text="{Binding ExceptionName}" ToolTip.Tip="{Binding ExceptionName}" />
+                                                    <TextBlock Grid.Column="12" Classes="LogTableCell" Text="{Binding ExceptionMessage}" ToolTip.Tip="{Binding ExceptionMessage}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </DockPanel>
+                        </ScrollViewer>
                     </Grid>
                 </Border>
             </Grid>

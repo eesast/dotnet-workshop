@@ -1,4 +1,5 @@
 ﻿using Avalonia;
+using Grpc.Core.Interceptors;
 using Grpc.Net.Client;
 using LogAnalyzerClient.Services;
 using LogAnalyzerRpc.Protos;
@@ -9,10 +10,15 @@ namespace LogAnalyzerClient.Desktop
 {
     internal class ClientFactory : IClientFactory
     {
-        public LogAnalyzerAgentServiceClient CreateClient(string address)
+        public LogAnalyzerAgentServiceClient CreateClient(string address, string token)
         {
             var channel = GrpcChannel.ForAddress(address);
-            var client = new LogAnalyzerAgentServiceClient(channel);
+            var invoker = channel.CreateCallInvoker().Intercept(metadata =>
+            {
+                metadata.Add("Authorization", $"Bearer {token}");
+                return metadata;
+            });
+            var client = new LogAnalyzerAgentServiceClient(invoker);
             return client;
         }
     }

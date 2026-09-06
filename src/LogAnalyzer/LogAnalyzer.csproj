@@ -10,4 +10,8 @@
     <ProjectReference Include="..\LogParser\LogParser.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Parquet.Net" Version="6.1.0" />
+  </ItemGroup>
+
 </Project>

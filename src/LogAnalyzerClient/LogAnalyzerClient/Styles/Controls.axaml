@@ -47,4 +47,45 @@
         <Setter Property="MinWidth" Value="30" />
         <Setter Property="HorizontalContentAlignment" Value="Right" />
     </Style>
+
+    <Style Selector="Border.LogTableHeader">
+        <Setter Property="Background" Value="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+
+    <Style Selector="TextBlock.LogTableHeaderCell">
+        <Setter Property="Padding" Value="8,7" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <Style Selector="ListBox.ResultTable > ListBoxItem">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    </Style>
+
+    <Style Selector="Border.LogEntryRow">
+        <Setter Property="BorderBrush" Value="{DynamicResource SystemControlForegroundBaseLowBrush}" />
+        <Setter Property="BorderThickness" Value="0,0,0,1" />
+    </Style>
+
+    <Style Selector="Border.LogEntryRow.Info">
+        <Setter Property="Background" Value="#182563EB" />
+    </Style>
+
+    <Style Selector="Border.LogEntryRow.Warning">
+        <Setter Property="Background" Value="#26F59E0B" />
+    </Style>
+
+    <Style Selector="Border.LogEntryRow.Error">
+        <Setter Property="Background" Value="#26DC2626" />
+    </Style>
+
+    <Style Selector="TextBlock.LogTableCell">
+        <Setter Property="Padding" Value="8,6" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+    </Style>
 </Styles>

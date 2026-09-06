@@ -18,8 +18,7 @@ builder.Services.AddGrpc();
 builder.Services.AddCors();
 
 // 依赖注入，且有状态服务需要单例
-builder.Services.AddSingleton<LogFileAnalyzer>();
-builder.Services.AddSingleton<AgentSession>();
+builder.Services.AddSingleton<AgentSessionRegistry>();
 builder.Services.AddSingleton<AgentService>();
 
 var app = builder.Build();

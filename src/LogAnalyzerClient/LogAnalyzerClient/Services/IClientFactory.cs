@@ -7,12 +7,12 @@ namespace LogAnalyzerClient.Services
 
     public interface IClientFactory
     {
-        LogAnalyzerAgentServiceClient CreateClient(string address);
+        LogAnalyzerAgentServiceClient CreateClient(string address, string token);
     }
 
     public class NullClientFactory : IClientFactory
     {
-        public LogAnalyzerAgentServiceClient CreateClient(string address)
+        public LogAnalyzerAgentServiceClient CreateClient(string address, string token)
         {
             throw new ClientInternalException("Unknown error: No ClientFactory.");
         }
