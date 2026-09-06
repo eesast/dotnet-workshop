@@ -4,9 +4,13 @@
                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                 xmlns:vm="using:LogAnalyzerClient.ViewModels"
                 xmlns:models="using:LogAnalyzerClient.Models"
+                xmlns:helpers="using:LogAnalyzerClient.Helpers"
                 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
                 x:Class="LogAnalyzerClient.Views.MainView"
                 x:DataType="vm:MainViewModel">
+    <UserControl.Resources>
+        <helpers:SeverityToBrushConverter x:Key="SeverityBrush" />
+    </UserControl.Resources>
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
 to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
@@ -116,25 +120,164 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 </Border>
 
                 <Border Grid.Column="1" Classes="Card">
-                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
+                    <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="6">
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10">
                             <TextBlock Classes="SectionTitle" Text="Analysis Result" />
+                            <TextBlock VerticalAlignment="Center" Text="Sort by:" />
+                            <ComboBox Width="130"
+                                      VerticalAlignment="Center"
+                                      ItemsSource="{Binding SortKeys}"
+                                      SelectedItem="{Binding SortKey}" />
+                            <CheckBox VerticalAlignment="Center"
+                                      Content="Descending"
+                                      IsChecked="{Binding SortDescending}" />
+                            <Button Content="Apply Sort" Command="{Binding SortRowsCommand}" />
+                            <Button Content="Export JSON" Command="{Binding ExportJsonCommand}" />
                         </StackPanel>
 
-                        <TextBlock Grid.Row="1"
-                                   Classes="SubtleText"
-                                   Text="Analysis results. Each line is a single log entry."
+                        <StackPanel Grid.Row="1" Spacing="4">
+                            <TextBlock Classes="SubtleText"
+                                       Text="Query conditions (leave blank / select All to skip):"
+                                       TextWrapping="Wrap" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock VerticalAlignment="Center" Text="Request ID" />
+                                <TextBox Width="150" Text="{Binding QueryRequestId}"
+                                         PlaceholderText="Request ID" />
+                                <TextBlock VerticalAlignment="Center" Text="Service" />
+                                <TextBox Width="120" Text="{Binding QueryServiceName}"
+                                         PlaceholderText="e.g. gateway" />
+                                <TextBlock VerticalAlignment="Center" Text="Severity" />
+                                <ComboBox Width="110"
+                                          ItemsSource="{Binding SeverityFilterOptions}"
+                                          SelectedItem="{Binding QuerySeverity}" />
+                                <TextBlock VerticalAlignment="Center" Text="Event" />
+                                <ComboBox Width="110"
+                                          ItemsSource="{Binding EventTypeFilterOptions}"
+                                          SelectedItem="{Binding QueryEventType}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock VerticalAlignment="Center" Text="Start time" />
+                                <TextBox Width="190" Text="{Binding QueryStartTime}"
+                                         PlaceholderText="2026-06-05T16:00:00Z" />
+                                <TextBlock VerticalAlignment="Center" Text="End time" />
+                                <TextBox Width="190" Text="{Binding QueryEndTime}"
+                                         PlaceholderText="2026-06-05T17:00:00Z" />
+                                <Button Content="Query" Command="{Binding QueryCommand}" />
+                                <Button Content="Clear Filter" Command="{Binding ClearFilterCommand}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <TextBlock Grid.Row="2"
+                                   Text="{Binding ResultStatusText}"
                                    TextWrapping="Wrap" />
 
-                        <ListBox Name="ResultEntryListBox"
-                                Grid.Row="2"
-                                ItemsSource="{Binding ResultEntries, Mode=OneWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
+                        <DataGrid Grid.Row="3"
+                                  ItemsSource="{Binding ResultRows, Mode=OneWay}"
+                                  AutoGenerateColumns="False"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  CanUserSortColumns="False"
+                                  GridLinesVisibility="Horizontal">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="LineNo" Width="70">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding LineNo}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Timestamp" Width="210">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding Timestamp}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="PodName" Width="130">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding PodName}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Severity" Width="110">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <Border Background="{Binding Severity, Converter={StaticResource SeverityBrush}}"
+                                                    CornerRadius="10"
+                                                    Padding="8,2"
+                                                    Margin="2"
+                                                    HorizontalAlignment="Left">
+                                                <TextBlock Text="{Binding Severity}" Foreground="White" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="EventType" Width="100">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding EventType}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="RequestId" Width="250">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding RequestId}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="TargetService" Width="140">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding TargetService}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="DurationMs" Width="100">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding DurationMs}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Method" Width="90">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding Method}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Path" Width="180">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding Path}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="StatusCode" Width="100">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding StatusCode}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="ExceptionName" Width="260">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding ExceptionName}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="ExceptionMessage" Width="300">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate x:DataType="models:LogTableRow">
+                                            <TextBlock Text="{Binding ExceptionMessage}" VerticalAlignment="Center" Margin="6,0" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
                     </Grid>
                 </Border>
             </Grid>

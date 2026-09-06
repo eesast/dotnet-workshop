@@ -4,6 +4,7 @@ using LogAnalyzer;
 using LogAnalyzerRpc.Protos;
 using LogAnalyzerRpc;
 using LogParser.Visitors;
+using LogParser.Models;
 
 namespace LogAnalyzerAgent.Applications
 {
@@ -277,6 +278,98 @@ namespace LogAnalyzerAgent.Applications
                     }
                 ];
             }
+        }
+
+        public IReadOnlyList<GetAnalysisResultResponse> QueryAnalysisResult(QueryAnalysisResultRequest request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var allResponses = GetAnalysisResult(new GetAnalysisResultRequest()
+                {
+                    FileName = request.FileName,
+                }, cancellationToken);
+
+                var criteria = request.Criteria;
+                if (criteria is null)
+                {
+                    return allResponses;
+                }
+
+                var filteredResponses = new List<GetAnalysisResultResponse>();
+                foreach (var response in allResponses)
+                {
+                    if (response.PayloadCase != GetAnalysisResultResponse.PayloadOneofCase.LogEntry)
+                    {
+                        filteredResponses.Add(response);
+                        continue;
+                    }
+
+                    var entry = GrpcTypeConverter.ConvertFromGrpc(response.LogEntry);
+                    if (MatchesCriteria(entry, criteria))
+                    {
+                        filteredResponses.Add(response);
+                    }
+                }
+                return filteredResponses;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while querying analysis result.");
+                return
+                [
+                    new GetAnalysisResultResponse()
+                    {
+                        Status = CreateErrorOperationStatus(
+                            AgentErrorCode.InternalError,
+                            $"An error occurred while querying analysis result: {ex.Message}"),
+                    }
+                ];
+            }
+        }
+
+        private static bool MatchesCriteria(LogEntry entry, LogQueryCriteria criteria)
+        {
+            if (criteria.HasRequestId)
+            {
+                var requestId = entry switch
+                {
+                    CallLogEntry call => call.RequestId,
+                    RequestLogEntry request => request.RequestId,
+                    _ => null,
+                };
+                if (requestId != criteria.RequestId)
+                {
+                    return false;
+                }
+            }
+
+            if (criteria.HasServiceName
+                && !entry.PodName.StartsWith(criteria.ServiceName + "-", StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            if (criteria.HasSeverity && entry.Severity != GrpcTypeConverter.ConvertFromGrpc(criteria.Severity))
+            {
+                return false;
+            }
+
+            if (criteria.HasEventType && entry.EventType != GrpcTypeConverter.ConvertFromGrpc(criteria.EventType))
+            {
+                return false;
+            }
+
+            if (criteria.StartTime is not null && entry.Timestamp < criteria.StartTime.ToDateTimeOffset())
+            {
+                return false;
+            }
+
+            if (criteria.EndTime is not null && entry.Timestamp > criteria.EndTime.ToDateTimeOffset())
+            {
+                return false;
+            }
+
+            return true;
         }
     }
 }
