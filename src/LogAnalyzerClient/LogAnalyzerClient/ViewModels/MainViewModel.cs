@@ -36,6 +36,9 @@ namespace LogAnalyzerClient.ViewModels
 
         [ObservableProperty]
         private string _currentAddress = "";
+
+        [ObservableProperty]
+        private string _token = "";
         private static class ConnectStatusString
         {
             public const string NOT_CONNECTED = "Not connected.";
@@ -58,23 +61,28 @@ namespace LogAnalyzerClient.ViewModels
         [RelayCommand]
         private async Task ConnectAsync()
         {
-            var address = await DialogHelper.ShowConnectDialogAsync(CurrentAddress);
-            if (address is null)
+            var connectInfo = await DialogHelper.ShowConnectDialogAsync(CurrentAddress, Token);
+            if (connectInfo is null)
             {
                 // Do nothing if the user cancels the dialog
             }
-            else if (string.IsNullOrEmpty(address.Trim()))
+            else if (string.IsNullOrEmpty(connectInfo.Address) || string.IsNullOrWhiteSpace(connectInfo.Address.Trim()))
             {
                 await DialogHelper.ShowMessageDialogAsync("Error", "Address cannot be empty.");
+            }
+            else if (string.IsNullOrEmpty(connectInfo.Token) || string.IsNullOrWhiteSpace(connectInfo.Token.Trim()))
+            {
+                await DialogHelper.ShowMessageDialogAsync("Error", "Token cannot be empty.");
             }
             else
             {
                 try
                 {
                     ConnectStatus = ConnectStatusString.CONNECTING;
-                    _client = AppService.ClientFactory.CreateClient(address);
+                    _client = AppService.ClientFactory.CreateClient(connectInfo.Address, connectInfo.Token);
                     await _client.PingAsync(new Empty());
-                    CurrentAddress = address;
+                    CurrentAddress = connectInfo.Address;
+                    Token = connectInfo.Token;
                     ConnectStatus = ConnectStatusString.CONNECTED;
                     LogFiles.Clear();
                 }
