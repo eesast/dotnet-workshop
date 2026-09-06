@@ -1,0 +1,46 @@
+label: 文档导航
+home_label: 项目主页
+open_label: 展开导航
+close_label: 隐藏导航
+home_url: /
+sections:
+  - title: "`00-prepare`"
+    items:
+      - title: Guidance
+        url: /docs/00-prepare/guidance.html
+      - title: Tasks
+        url: /docs/00-prepare/tasks.html
+  - title: "`01-basic`"
+    items:
+      - title: Guidance
+        url: /docs/01-basic/guidance.html
+      - title: Tasks
+        url: /docs/01-basic/tasks.html
+  - title: "`02-multithreading`"
+    items:
+      - title: Guidance
+        url: /docs/02-multithreading/guidance.html
+      - title: Tasks
+        url: /docs/02-multithreading/tasks.html
+  - title: "`03-async-grpc`"
+    items:
+      - title: Guidance
+        url: /docs/03-async-grpc/guidance.html
+      - title: Tasks
+        url: /docs/03-async-grpc/tasks.html
+  - title: "`04-avalonia`"
+    items:
+      - title: Guidance
+        url: /docs/04-avalonia/guidance.html
+      - title: Tasks
+        url: /docs/04-avalonia/tasks.html
+  - title: "`05-advanced`"
+    items:
+      - title: Guidance
+        url: /docs/05-advanced/guidance.html
+      - title: Tasks
+        url: /docs/05-advanced/tasks.html
+  - title: "`appendix`"
+    items:
+      - title: 附录 A：部分名词不同语言对照表
+        url: /docs/appendix/appendix-a-glossary.html

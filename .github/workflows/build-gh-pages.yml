@@ -2,11 +2,11 @@ name: build-gh-pages
 
 on:
   pull_request:
-    branches: [dev, main]
+    branches: [dev, main, gh-pages]
     paths-ignore:
       - "src/**"
   push:
-    branches: [dev, main]
+    branches: [dev, main, gh-pages]
     paths-ignore:
       - "src/**"
 

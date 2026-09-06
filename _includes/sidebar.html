@@ -1,0 +1,58 @@
+<button
+  type="button"
+  class="sidebar-open-button"
+  aria-label="{{ include.navigation.open_label }}"
+  title="{{ include.navigation.open_label }}"
+  aria-controls="sidebar-panel"
+  aria-expanded="false">
+  <span aria-hidden="true">☰</span>
+  <span class="sidebar-open-label">{{ include.navigation.open_label }}</span>
+</button>
+
+<aside id="sidebar-panel" class="sidebar" aria-hidden="false">
+  <button
+    type="button"
+    class="sidebar-close-button"
+    aria-controls="sidebar-panel"
+    aria-expanded="true">
+    <span aria-hidden="true">‹</span>
+    <span>{{ include.navigation.close_label }}</span>
+  </button>
+
+  <nav aria-label="{{ include.navigation.label }}">
+    <a class="sidebar-home" href="{{ include.navigation.home_url | relative_url }}">
+      {{ include.navigation.home_label }}
+    </a>
+
+    {% for section in include.navigation.sections %}
+      {% assign section_is_active = false %}
+      {% for item in section.items %}
+        {% if page.url == item.url %}
+          {% assign section_is_active = true %}
+        {% endif %}
+      {% endfor %}
+
+      <details class="sidebar-section"{% if section_is_active %} open{% endif %}>
+        <summary>{{ section.title | markdownify | remove: '<p>' | remove: '</p>' }}</summary>
+        <ul>
+          {% for item in section.items %}
+            <li>
+              {% if page.url == item.url %}
+                <span class="active" aria-current="page">{{ item.title | markdownify | remove: '<p>' | remove: '</p>' }}</span>
+              {% else %}
+                <a href="{{ item.url | relative_url }}">{{ item.title | markdownify | remove: '<p>' | remove: '</p>' }}</a>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endfor %}
+  </nav>
+</aside>
+
+<button
+  type="button"
+  class="sidebar-backdrop"
+  aria-label="{{ include.navigation.close_label }}"
+  tabindex="-1">
+</button>

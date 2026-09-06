@@ -2,7 +2,7 @@ name: Deploy Jekyll and Avalonia WASM demo
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "gh-pages"]
     paths-ignore:
       - "src/**"
 
@@ -66,7 +66,7 @@ jobs:
       - name: Checkout demo repository
         uses: actions/checkout@v4
         with:
-          repository: eesast/dotnet-workshop-solution
+          repository: ${{ vars.DOTNET_WORKSHOP_SOLUTION_REPOSITORY }}
           token: ${{ secrets.DOTNET_WORKSHOP_SOLUTION_READ }}
           path: dotnet-workshop-solution
           persist-credentials: false
