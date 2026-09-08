@@ -27,6 +27,12 @@ namespace LocalCli
                 {
                     return null;
                 }
+                directory = directory.Trim();
+                if (directory.Length == 0)
+                {
+                    Console.WriteLine("Directory cannot be empty, please try again:");
+                    continue;
+                }
                 try
                 {
                     if (!analyzer.ChangeDirectory(directory))
@@ -39,6 +45,11 @@ namespace LocalCli
                 catch (ArgumentException)
                 {
                     Console.WriteLine("Directory illegal, please try again:");
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to open directory: {ex.Message}");
                     continue;
                 }
             }
@@ -112,22 +123,138 @@ namespace LocalCli
 
         private static void ShowLogFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            var files = analyzer.GetLogFiles();
+            Console.WriteLine($"[{string.Join(", ", files)}]");
         }
 
         private static void AnalyzeFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            try
+            {
+                var degreeOfParallelism = ReadDegreeOfParallelism();
+                var fileNames = ReadFileNames();
+
+                analyzer.AnalyzeFiles(degreeOfParallelism, fileNames);
+                Console.WriteLine($"Analysis completed: [{string.Join(", ", fileNames)}]");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Analysis failed: {ex.Message}");
+            }
         }
 
         private static void AnalyzeAll(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            try
+            {
+                var degreeOfParallelism = ReadDegreeOfParallelism();
+                var fileNames = analyzer.GetLogFiles();
+
+                analyzer.AnalyzeAll(degreeOfParallelism);
+                Console.WriteLine($"Analysis completed: [{string.Join(", ", fileNames)}]");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Analysis failed: {ex.Message}");
+            }
         }
 
         private static void GetAnalysisResult(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Please input log file name:");
+            var input = Console.ReadLine();
+            if (input is null)
+            {
+                return;
+            }
+
+            var fileName = input.Trim();
+            if (fileName.Length == 0)
+            {
+                Console.WriteLine("File name cannot be empty.");
+                return;
+            }
+
+            if (!analyzer.TryGetAnalysisResult(fileName, out var result) || result is null)
+            {
+                Console.WriteLine($"File {fileName} does not exist.");
+                return;
+            }
+
+            switch (result.State)
+            {
+                case AnalysisState.NotAnalyzed:
+                    Console.WriteLine($"File {fileName} has not been analyzed yet.");
+                    break;
+
+                case AnalysisState.Failed:
+                    Console.WriteLine(
+                        $"Analysis failed for {fileName}: {result.ErrorMessage ?? "Unknown error"}");
+                    break;
+
+                case AnalysisState.Succeeded:
+                    Console.WriteLine($"Analysis result for {fileName}:");
+                    var visitor = new KeyValueVisitor();
+                    foreach (var entry in result.Entries)
+                    {
+                        var values = visitor.Dump(entry);
+                        Console.WriteLine(string.Join(", ",
+                            values.Select(pair => $"{pair.Key}: {pair.Value}")));
+                    }
+                    break;
+
+                default:
+                    Console.WriteLine($"Unknown analysis state for {fileName}: {result.State}");
+                    break;
+            }
+        }
+
+        private static int ReadDegreeOfParallelism()
+        {
+            while (true)
+            {
+                Console.WriteLine("Please input degree of parallelism:");
+                var input = Console.ReadLine();
+                if (input is null)
+                {
+                    throw new EndOfStreamException("Input ended.");
+                }
+
+                if (int.TryParse(input.Trim(), out var degreeOfParallelism)
+                    && degreeOfParallelism >= 0)
+                {
+                    return degreeOfParallelism;
+                }
+
+                Console.WriteLine("Invalid degree of parallelism, please try again:");
+            }
+        }
+
+        private static List<string> ReadFileNames()
+        {
+            while (true)
+            {
+                Console.WriteLine("Please input log file names (comma separated):");
+                var input = Console.ReadLine();
+                if (input is null)
+                {
+                    throw new EndOfStreamException("Input ended.");
+                }
+
+                var fileNames = input
+                    .Split(',')
+                    .Select(fileName => fileName.Trim())
+                    .Where(fileName => fileName.Length > 0)
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList();
+
+                if (fileNames.Count > 0)
+                {
+                    return fileNames;
+                }
+
+                Console.WriteLine("No log file names provided, please try again:");
+            }
         }
     }
 }

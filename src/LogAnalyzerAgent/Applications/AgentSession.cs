@@ -18,14 +18,25 @@ namespace LogAnalyzerAgent.Applications
             _logger = loggerFactory.CreateLogger<AgentSession>();
         }
 
-        private static OperationStatusMessage CreateInternalErrorOperationStatus(Exception ex)
+        private static OperationStatusMessage CreateErrorOperationStatus(
+            AgentErrorCode code,
+            string message)
         {
             return new OperationStatusMessage()
             {
                 Success = false,
-                Code = AgentErrorCode.InternalError,
-                Message = $"An error occurred while retrieving agent status: {ex.Message}",
+                Code = code,
+                Message = message,
             };
+        }
+
+        private static OperationStatusMessage CreateInternalErrorOperationStatus(
+            Exception ex,
+            string operation)
+        {
+            return CreateErrorOperationStatus(
+                AgentErrorCode.InternalError,
+                $"An error occurred while {operation}: {ex.Message}");
         }
 
         private static OperationStatusMessage CreateNoErrorOperationStatus()
@@ -55,7 +66,9 @@ namespace LogAnalyzerAgent.Applications
             }
             catch (Exception ex)
             {
-                response.Status = CreateInternalErrorOperationStatus(ex);
+                response.Status = CreateInternalErrorOperationStatus(
+                    ex,
+                    "retrieving agent status");
                 _logger.LogError(ex, "An error occurred while retrieving agent status.");
             }
             return Task.FromResult(response);
@@ -71,7 +84,9 @@ namespace LogAnalyzerAgent.Applications
             }
             catch (Exception ex)
             {
-                response.Status = CreateInternalErrorOperationStatus(ex);
+                response.Status = CreateInternalErrorOperationStatus(
+                    ex,
+                    "retrieving log files");
                 _logger.LogError(ex, "An error occurred while retrieving log files.");
             }
             return Task.FromResult(response);
@@ -79,22 +94,205 @@ namespace LogAnalyzerAgent.Applications
 
         public Task<ChangeDirectoryResponse> ChangeDirectory(ChangeDirectoryRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new ChangeDirectoryResponse();
+            try
+            {
+                var success = _analyzer.ChangeDirectory(request.DirectoryPath);
+                if (!success)
+                {
+                    response.Status = _analyzer.IsAnalyzing
+                        ? CreateErrorOperationStatus(
+                            AgentErrorCode.InvalidOperation,
+                            "Cannot change directory while log analysis is in progress.")
+                        : CreateErrorOperationStatus(
+                            AgentErrorCode.DirectoryNotFound,
+                            $"Directory not found: {request.DirectoryPath}");
+                    return Task.FromResult(response);
+                }
+                response.CurrentDirectory = request.DirectoryPath;
+                response.FileNames.AddRange(_analyzer.GetLogFiles());
+                response.Status = CreateNoErrorOperationStatus();
+            }
+            catch (ArgumentException ex)
+            {
+                response.Status = CreateErrorOperationStatus(
+                    AgentErrorCode.InvalidArgument,
+                    ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Status = CreateErrorOperationStatus(
+                    AgentErrorCode.InvalidOperation,
+                    ex.Message);
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(
+                    ex,
+                    "changing directory");
+                _logger.LogError(ex, "An error occurred while changing directory.");
+            }
+            return Task.FromResult(response);
         }
 
         public Task<AnalyzeAllResponse> AnalyzeAll(AnalyzeAllRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new AnalyzeAllResponse();
+            try
+            {
+                if (request.DegreeOfParallelism < 0)
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidArgument,
+                        "Degree of parallelism must be non-negative.");
+                    return Task.FromResult(response);
+                }
+                if (!_analyzer.HasDirectory)
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidOperation,
+                        "No log directory has been configured.");
+                    return Task.FromResult(response);
+                }
+
+                _analyzer.AnalyzeAll(request.DegreeOfParallelism);
+                response.Status = CreateNoErrorOperationStatus();
+            }
+            catch (ArgumentException ex)
+            {
+                response.Status = CreateErrorOperationStatus(
+                    AgentErrorCode.InvalidArgument,
+                    ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Status = CreateErrorOperationStatus(
+                    AgentErrorCode.InvalidOperation,
+                    ex.Message);
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(
+                    ex,
+                    "analyzing all log files");
+                _logger.LogError(ex, "An error occurred while analyzing all log files.");
+            }
+            return Task.FromResult(response);
         }
 
         public Task<AnalyzeFilesResponse> AnalyzeFiles(AnalyzeFilesRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var response = new AnalyzeFilesResponse();
+            try
+            {
+                if (request.DegreeOfParallelism < 0)
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidArgument,
+                        "Degree of parallelism must be non-negative.");
+                    return Task.FromResult(response);
+                }
+                if (!_analyzer.HasDirectory)
+                {
+                    response.Status = CreateErrorOperationStatus(
+                        AgentErrorCode.InvalidOperation,
+                        "No log directory has been configured.");
+                    return Task.FromResult(response);
+                }
+
+                _analyzer.AnalyzeFiles(request.DegreeOfParallelism, request.FileNames);
+                response.Status = CreateNoErrorOperationStatus();
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                response.Status = CreateErrorOperationStatus(
+                    AgentErrorCode.InvalidArgument,
+                    ex.Message);
+            }
+            catch (ArgumentException ex)
+            {
+                response.Status = CreateErrorOperationStatus(
+                    AgentErrorCode.FileNotFound,
+                    ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                response.Status = CreateErrorOperationStatus(
+                    AgentErrorCode.InvalidOperation,
+                    ex.Message);
+            }
+            catch (Exception ex)
+            {
+                response.Status = CreateInternalErrorOperationStatus(
+                    ex,
+                    "analyzing specified log files");
+                _logger.LogError(ex, "An error occurred while analyzing specified log files.");
+            }
+            return Task.FromResult(response);
         }
 
         public IReadOnlyList<GetAnalysisResultResponse> GetAnalysisResult(GetAnalysisResultRequest request, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException("TODO: T3.1");
+            var responses = new List<GetAnalysisResultResponse>();
+            try
+            {
+                var success = _analyzer.TryGetAnalysisResult(request.FileName, out var result);
+                if (!success || result is null)
+                {
+                    responses.Add(new GetAnalysisResultResponse()
+                    {
+                        Status = new OperationStatusMessage()
+                        {
+                            Success = false,
+                            Code = AgentErrorCode.FileNotFound,
+                            Message = $"File not found: {request.FileName}",
+                        }
+                    });
+                    return responses;
+                }
+
+                responses.Add(new GetAnalysisResultResponse()
+                {
+                    Header = new AnalysisResultHeaderMessage()
+                    {
+                        FileName = result.FileName,
+                        FullName = result.FullName,
+                        State = GrpcTypeConverter.ConvertToGrpc(result.State),
+                        ErrorMessage = result.ErrorMessage ?? "",
+                        WorkerId = result.WorkerId,
+                    },
+                    Status = CreateNoErrorOperationStatus()
+                });
+
+                foreach (var entry in result.Entries)
+                {
+                    var entryMessage = GrpcTypeConverter.ConvertToGrpc(entry);
+                    responses.Add(new GetAnalysisResultResponse()
+                    {
+                        LogEntry = entryMessage,
+                        Status = CreateNoErrorOperationStatus()
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                responses.Add(new GetAnalysisResultResponse()
+                {
+                    Header = new AnalysisResultHeaderMessage()
+                    {
+                        FileName = request.FileName,
+                        FullName = "",
+                        State = AnalysisStateEnum.NotAnalyzed,
+                        ErrorMessage = $"An error occurred while retrieving analysis result: {ex.Message}",
+                        WorkerId = -1,
+                    },
+                    Status = CreateInternalErrorOperationStatus(
+                        ex,
+                        "retrieving an analysis result")
+                });
+                _logger.LogError(ex, "An error occurred while retrieving analysis result.");
+            }
+            return responses;
         }
     }
 }
