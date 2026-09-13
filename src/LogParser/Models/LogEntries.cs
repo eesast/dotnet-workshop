@@ -54,7 +54,7 @@
     {
         public override TResult Accept<TResult>(ILogEntryVisitor<TResult> visitor)
         {
-            throw new NotImplementedException("TODO: T1.2");
+            return visitor.Visit(this);
         }
     }
 
@@ -69,7 +69,7 @@
     {
         public override TResult Accept<TResult>(ILogEntryVisitor<TResult> visitor)
         {
-            throw new NotImplementedException("TODO: T1.2");
+            return visitor.Visit(this);
         }
     }
 
