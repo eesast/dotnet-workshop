@@ -112,22 +112,100 @@ namespace LocalCli
 
         private static void ShowLogFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            var files = analyzer.GetLogFiles();
+            if (files.Count == 0)
+            {
+                Console.WriteLine("No .log files found.");
+                return;
+            }
+
+            Console.WriteLine("Log files:");
+            foreach (var file in files)
+            {
+                Console.WriteLine($"- {file}");
+            }
         }
 
         private static void AnalyzeFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Please input comma-separated log file names:");
+            var input = Console.ReadLine();
+            if (input is null)
+            {
+                return;
+            }
+
+            var fileNames = input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (fileNames.Length == 0)
+            {
+                Console.WriteLine("No file name was provided.");
+                return;
+            }
+
+            try
+            {
+                analyzer.AnalyzeFiles(0, fileNames);
+                Console.WriteLine("Analysis completed.");
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            {
+                Console.WriteLine($"Unable to analyze files: {ex.Message}");
+            }
         }
 
         private static void AnalyzeAll(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            try
+            {
+                analyzer.AnalyzeAll(0);
+                Console.WriteLine("Analysis completed.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine($"Unable to analyze files: {ex.Message}");
+            }
         }
 
         private static void GetAnalysisResult(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Please input a log file name:");
+            var fileName = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                Console.WriteLine("File name cannot be empty.");
+                return;
+            }
+
+            try
+            {
+                if (!analyzer.TryGetAnalysisResult(fileName.Trim(), out var result) || result is null)
+                {
+                    Console.WriteLine("The specified file does not exist in the current directory.");
+                    return;
+                }
+
+                switch (result.State)
+                {
+                    case AnalysisState.NotAnalyzed:
+                        Console.WriteLine("This file has not been analyzed yet.");
+                        break;
+                    case AnalysisState.Failed:
+                        Console.WriteLine($"Analysis failed: {result.ErrorMessage}");
+                        break;
+                    case AnalysisState.Succeeded:
+                        var visitor = new KeyValueVisitor();
+                        foreach (var entry in result.Entries)
+                        {
+                            var values = visitor.Dump(entry);
+                            Console.WriteLine(string.Join(", ", values.Select(pair => $"{pair.Key}={pair.Value}")));
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            {
+                Console.WriteLine($"Unable to get analysis result: {ex.Message}");
+            }
         }
     }
 }
