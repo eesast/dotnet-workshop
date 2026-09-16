@@ -1,4 +1,5 @@
-﻿using LogAnalyzer;
+﻿using System.Net;
+using LogAnalyzer;
 using LogParser.Visitors;
 
 namespace LocalCli
@@ -112,22 +113,149 @@ namespace LocalCli
 
         private static void ShowLogFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            var files=analyzer.GetLogFiles();
+            if (files.Count == 0)
+            {
+                Console.WriteLine("No log files found in the current directory.");
+                return;
+            }
+            int index=1;
+            foreach (var file in files)
+            {
+                Console.WriteLine($"{index}.{file}");
+                index++;
+            }
         }
 
         private static void AnalyzeFiles(LogFileAnalyzer analyzer)
-        {
-            throw new NotImplementedException("T2.3");
+        {   while(true){
+            Console.WriteLine("Please input log files to analyze (separated by comma):");
+            var str=Console.ReadLine();
+            if (str is null)
+            {
+                return;
+            }
+            var selectedFiles = str.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(f => f.Trim()).ToArray();
+            if (selectedFiles.Length == 0)
+            {
+                Console.WriteLine("No files specified, please try again.");
+                continue;
+            }
+            int degree = 0; 
+            while (true) 
+            {
+                Console.WriteLine("Please input degree of parallelism:");
+                var degreeStr = Console.ReadLine();
+                if (degreeStr is null) return;
+                if (!int.TryParse(degreeStr, out degree))
+                {
+                    Console.WriteLine("Invalid number, please try again.");
+                    continue; 
+                }
+                break; 
+            }
+            try
+                {
+                    analyzer.AnalyzeFiles(degree,selectedFiles);
+                    break;
+                }
+                catch (InvalidOperationException)
+                {
+                    Console.WriteLine("Analysis is already running, please wait.");
+                    break;
+                }
+                catch(ArgumentException)
+                {
+                    Console.WriteLine("Invalid files, please try again.");
+                    continue;
+                }
+            }
+ 
         }
+
 
         private static void AnalyzeAll(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            while (true)
+            {
+                Console.WriteLine("Please input degree of parallelism:");
+                var degreeStr = Console.ReadLine();
+                if (degreeStr is null)
+                {
+                    return; 
+                }
+                if (!int.TryParse(degreeStr, out int degree))
+                {
+                    Console.WriteLine("Invalid number, please try again.");
+                    continue; 
+                }
+                try
+                {
+                    analyzer.AnalyzeAll(degree);
+                    break; 
+                }
+                catch (InvalidOperationException)
+                {
+                    Console.WriteLine("Analysis is already running, please wait.");
+                    break; 
+                }
+                catch (ArgumentException)
+                {
+                    Console.WriteLine("Invalid degree of parallelism, please try again.");
+                    continue; 
+                }
+            }
         }
 
         private static void GetAnalysisResult(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            while (true)
+            {
+                Console.WriteLine("Please input log file name:");
+                var fileName = Console.ReadLine();
+                if (fileName is null)
+                {
+                    return;
+                }
+                fileName = fileName.Trim();
+                if (fileName.Length == 0)
+                {
+                    Console.WriteLine("Invalid file name, please try again.");
+                    continue;
+                }
+                if (!analyzer.TryGetAnalysisResult(fileName, out var result))
+                {
+                    Console.WriteLine("File not found, please try again.");
+                    continue;
+                }
+                if (result is null)
+                {
+                    Console.WriteLine("File not found, please try again.");
+                    continue;
+                }
+                switch (result.State)
+                {
+                    case AnalysisState.NotAnalyzed:
+                        Console.WriteLine("Not analyzed.");
+                        break;
+                    case AnalysisState.Failed:
+                        Console.WriteLine($"Failed: {result.ErrorMessage}");
+                        break;
+                    case AnalysisState.Succeeded:
+                        var visitor = new KeyValueVisitor();
+                        foreach (var entry in result.Entries)
+                            {
+                                var logDict = visitor.Dump(entry);
+                                foreach (var kvp in logDict)
+                                {
+                                    Console.WriteLine($"{kvp.Key}: {kvp.Value}");
+                                }
+                            }
+                        break;
+
+                }
+                break;
+            }
         }
     }
 }
