@@ -26,12 +26,32 @@ namespace LogParser.Visitors
 
         public Dictionary<string, string> Visit(RequestLogEntry entry)
         {
-            throw new NotImplementedException("TODO: T1.3");
+            return new Dictionary<string, string>
+            {
+                ["LineNo"] = entry.LineNo.ToString(),
+                ["Timestamp"] = entry.Timestamp.ToString("O"),
+                ["PodName"] = entry.PodName,
+                ["Severity"] = entry.Severity.ToString(),
+                ["EventType"] = entry.EventType.ToString(),
+                ["RequestId"] = entry.RequestId,
+                ["Method"] = entry.Method,
+                ["Path"] = entry.Path,
+                ["StatusCode"] = entry.StatusCode.ToString(),
+            };
         }
 
         public Dictionary<string, string> Visit(InternalLogEntry entry)
         {
-            throw new NotImplementedException("TODO: T1.3");
+            return new Dictionary<string, string>
+            {
+                ["LineNo"] = entry.LineNo.ToString(),
+                ["Timestamp"] = entry.Timestamp.ToString("O"),
+                ["PodName"] = entry.PodName,
+                ["Severity"] = entry.Severity.ToString(),
+                ["EventType"] = entry.EventType.ToString(),
+                ["ExceptionName"] = entry.ExceptionName,
+                ["ExceptionMessage"] = entry.ExceptionMessage,
+            };
         }
     }
 }

@@ -88,8 +88,14 @@ namespace LocalCli
                 switch (choice)
                 {
                     case 1:
+                        actions[choice](analyzer);
+                        break;
                     case 2:
+                        actions[choice](analyzer);
+                        break;
                     case 3:
+                        actions[choice](analyzer);
+                        break;
                     case 4:
                         actions[choice](analyzer);
                         break;
@@ -112,22 +118,78 @@ namespace LocalCli
 
         private static void ShowLogFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            analyzer.GetLogFiles().ToList().ForEach(fileName => Console.WriteLine(fileName));
         }
 
         private static void AnalyzeFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Please input log file names, separated by space:");
+            var input = Console.ReadLine();
+            if (input is null)
+            {
+                return;
+            }
+            var fileNames = input.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            Console.WriteLine("Please input degree of parallelism:");
+            var degreeOfParallelismStr = Console.ReadLine();
+            if (degreeOfParallelismStr is null)
+            {
+                return;
+            }
+            if (!int.TryParse(degreeOfParallelismStr, out var degreeOfParallelism))
+            {
+                Console.WriteLine("Invalid input for degree of parallelism.");
+                return;
+            }
+            analyzer.AnalyzeFiles(degreeOfParallelism, fileNames);
+            Console.WriteLine("Done.");
         }
 
         private static void AnalyzeAll(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Please input degree of parallelism:");
+            var degreeOfParallelismStr = Console.ReadLine();
+            if (degreeOfParallelismStr is null)
+            {
+                return;
+            }
+            if (!int.TryParse(degreeOfParallelismStr, out var degreeOfParallelism))
+            {
+                Console.WriteLine("Invalid input for degree of parallelism.");
+                return;
+            }
+            analyzer.AnalyzeAll(degreeOfParallelism);
+            Console.WriteLine("Done.");
         }
 
         private static void GetAnalysisResult(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            analyzer.GetLogFiles().ToList().ForEach(fileName =>
+            {
+                if (analyzer.TryGetAnalysisResult(fileName, out var result))
+                {
+                    if (result == null)
+                    {
+                        Console.WriteLine($"No analysis result for file: {fileName}");
+                    }
+                    Console.WriteLine($"File: {fileName}");
+                    Console.WriteLine($"State: {result.State}");
+                    if (result.State == AnalysisState.Failed)
+                    {
+                        Console.WriteLine($"Error Message: {result.ErrorMessage}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Log Entries Count: {result.Entries.Count}");
+                    }
+                    Console.WriteLine();
+                }
+                else
+                {
+                    Console.WriteLine($"No analysis result for file: {fileName}");
+                }
+            });
         }
     }
 }
