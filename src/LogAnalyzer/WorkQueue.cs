@@ -6,12 +6,13 @@ namespace LogAnalyzer
     {
         private readonly Queue<T> _items = new();
         private bool _isCompleted = false;
+        private readonly object _lock = new object();
 
         public bool IsCompleted
         {
             get
             {
-                lock (_items)
+                lock (_lock)
                 {
                     return _isCompleted;
                 }
@@ -20,17 +21,42 @@ namespace LogAnalyzer
 
         public void Enqueue(T item)
         {
-            throw new NotImplementedException("TODO: T2.1");
+            lock (_lock)                   
+            {                              
+                _items.Enqueue(item);      
+                Monitor.Pulse(_lock);      
+            }        
         }
 
         public bool TryDequeue([NotNullWhen(true)] out T? item)
         {
-            throw new NotImplementedException("TODO: T2.1");
+             lock (_lock)                   
+            {                              
+                while (_items.Count == 0 && !_isCompleted) 
+                {                          
+                    Monitor.Wait(_lock);   
+                }                          
+
+                if (_items.Count > 0)     
+                {                          
+                    item = _items.Dequeue(); 
+                    return true;           
+                }                         
+                else                       
+                {                          
+                    item = default(T);     
+                    return false;          
+                }                          
+            }
         }
 
         public void CompleteAdding()
         {
-            throw new NotImplementedException("TODO: T2.1");
+            lock (_lock)                   
+            {                              
+                _isCompleted = true;      
+                Monitor.PulseAll(_lock);  
+            }
         }
     }
 }

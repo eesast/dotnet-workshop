@@ -1,4 +1,5 @@
 ﻿using LogParser.Models;
+using System.Collections.Generic;
 
 namespace LogParser.Visitors
 {
@@ -24,14 +25,36 @@ namespace LogParser.Visitors
             };
         }
 
+         // 新增：处理Request类型日志
         public Dictionary<string, string> Visit(RequestLogEntry entry)
         {
-            throw new NotImplementedException("TODO: T1.3");
+            return new Dictionary<string, string>
+            {
+                ["LineNo"] = entry.LineNo.ToString(),
+                ["Timestamp"] = entry.Timestamp.ToString("O"),
+                ["PodName"] = entry.PodName,
+                ["Severity"] = entry.Severity.ToString(),
+                ["EventType"] = entry.EventType.ToString(),
+                ["RequestId"] = entry.RequestId,
+                ["Method"] = entry.Method,
+                ["Path"] = entry.Path,
+                ["StatusCode"] = entry.StatusCode.ToString()
+            };
         }
 
+        // 新增：处理 Internal 类型日志
         public Dictionary<string, string> Visit(InternalLogEntry entry)
         {
-            throw new NotImplementedException("TODO: T1.3");
+            return new Dictionary<string, string>
+            {
+                ["LineNo"] = entry.LineNo.ToString(),
+                ["Timestamp"] = entry.Timestamp.ToString("O"),
+                ["PodName"] = entry.PodName,
+                ["Severity"] = entry.Severity.ToString(),
+                ["EventType"] = entry.EventType.ToString(),
+                ["ExceptionName"] = entry.ExceptionName,
+                ["ExceptionMessage"] = entry.ExceptionMessage
+            };
         }
     }
 }

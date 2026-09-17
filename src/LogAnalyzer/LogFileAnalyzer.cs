@@ -138,9 +138,7 @@ namespace LogAnalyzer
                 }
                 fileList = fileNameList.Select(fileName => _logFiles[fileName]).ToList();
 
-                /*
-                 * Set _isAnalyzing
-                 */
+                _isAnalyzing = true;
                 // TODO: T2.2
             }
 
@@ -150,10 +148,10 @@ namespace LogAnalyzer
             }
             finally
             {
-                /*
-                 * Unset _isAnalyzing
-                 * Remember to lock _syncRoot to prevent data race
-                 */
+                lock (_syncRoot)
+                {
+                    _isAnalyzing = false;
+                }
                 // TODO: T2.2
             }
         }
@@ -165,11 +163,17 @@ namespace LogAnalyzer
             {
                 foreach (var file in fileList)
                 {
-                    /*
-                     * Filter unparsed files.
-                     * If there is an unknown file, throw System.InvalidOperationException.
-                     */
-                    throw new NotImplementedException("TODO: T2.2");
+                   // 如果文件压根不在目录文件列表里，直接报错
+                   if (!_logFiles.ContainsKey(file.Name))
+                   {
+                        throw new InvalidOperationException($"Unknown file: {file.Name}");
+                    }
+                     // 如果还没有分析结果，或者结果是“未分析”
+                    if (!_analysisResults.TryGetValue(file.Name, out var result) ||
+                    result.State == AnalysisState.NotAnalyzed)
+                    {
+                        logFilesToParse.Add(file);
+                    }
                 }
             }
 
@@ -180,9 +184,12 @@ namespace LogAnalyzer
 
             var queue = new WorkQueue<FileInfo>();
 
-            /*
-             * Enqueue log files
-             */
+            foreach (var file in logFilesToParse)
+            {
+                queue.Enqueue(file);
+            }
+            queue.CompleteAdding();
+
             // TODO: T2.2
 
             degreeOfParallelism = Math.Max(Math.Min(degreeOfParallelism, logFilesToParse.Count), 1);
@@ -190,16 +197,17 @@ namespace LogAnalyzer
             for (int i = 0; i < degreeOfParallelism; i++)
             {
                 int workerId = i;
+                var thread = new Thread(() => WorkerMain(workerId, queue));
                 string threadName = $"log-analyzer-worker-{workerId}";
-                /*
-                 * Create and start threads to run `WorkerMain`
-                 */
+                thread.Start();
+                workers[i] = thread;
                 // TODO: T2.2
             }
 
-            /*
-             * Wait for (join) all threads to end
-             */
+            foreach (var thread in workers)
+            {
+                thread.Join();
+            }
             // TODO: T2.2
         }
 
@@ -213,20 +221,37 @@ namespace LogAnalyzer
                 try
                 {
                     // Parse file
-                    throw new NotImplementedException("TODO: T2.2");
+                    using var reader = new StreamReader(file.FullName);
+                    var entries = parser.Parse(reader).ToList();
+                    // ---------- 组装成功的包裹 ----------
+                    result = new AnalysisResult(
+                        FileName: file.Name,
+                        FullName: file.FullName,
+                        State: AnalysisState.Succeeded,
+                        Entries: entries,
+                        ErrorMessage: null,
+                        WorkerId: workerId
+                    );
                 }
                 catch (Exception ex)
                 {
                     // Save exception message to result
-                    throw new NotImplementedException("TODO: T2.2");
+                    result = new AnalysisResult(
+                        FileName: file.Name,
+                        FullName: file.FullName,
+                        State: AnalysisState.Failed,
+                        Entries: Array.Empty<LogEntry>(),
+                        ErrorMessage: ex.Message,
+                        WorkerId: workerId
+                    );
                 }
-
-                /*
-                 * Save parse result.
-                 * [!Important] Remember to lock _syncRoot to prevent data race.
-                 */
-                throw new NotImplementedException("TODO: T2.2");
+                    // 把包裹放回仓库
+                    lock (_syncRoot)
+                    {
+                        _analysisResults[file.Name] = result;
+                    }
+                }
             }
-        }
-    }
+        }  
 }
+
