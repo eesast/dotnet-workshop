@@ -15,6 +15,8 @@ service LogAnalyzerAgentService {
 	rpc AnalyzeAll(AnalyzeAllRequest) returns (AnalyzeAllResponse);
 	rpc AnalyzeFiles(AnalyzeFilesRequest) returns (AnalyzeFilesResponse);
 	rpc GetAnalysisResult(GetAnalysisResultRequest) returns (stream GetAnalysisResultResponse);
+	rpc GetServiceTopology(GetServiceTopologyRequest) returns (GetServiceTopologyResponse);
+	rpc GetTopologyEdgeLogs(GetTopologyEdgeLogsRequest) returns (GetTopologyEdgeLogsResponse);
 }
 
 enum AgentErrorCode {
@@ -149,4 +151,35 @@ message GetAnalysisResultResponse {
 		LogEntryMessage log_entry = 2;
 	}
 	OperationStatusMessage status = 3;
+}
+
+message GetServiceTopologyRequest {
+	string file_name = 1;
+}
+
+message ServiceNodeMessage {
+	string name = 1;
+}
+
+message ServiceEdgeMessage {
+	string source_service = 1;
+	string target_service = 2;
+	int32 call_count = 3;
+}
+
+message GetServiceTopologyResponse {
+	OperationStatusMessage status = 1;
+	repeated ServiceNodeMessage nodes = 2;
+	repeated ServiceEdgeMessage edges = 3;
+}
+
+message GetTopologyEdgeLogsRequest {
+	string file_name = 1;
+	string source_service = 2;
+	string target_service = 3;
+}
+
+message GetTopologyEdgeLogsResponse {
+	OperationStatusMessage status = 1;
+	repeated CallLogEntryMessage entries = 2;
 }

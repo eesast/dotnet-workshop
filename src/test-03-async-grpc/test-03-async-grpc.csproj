@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LogAnalyzerAgent\LogAnalyzerAgent.csproj" />
+    <ProjectReference Include="..\LogAnalyzerClient\LogAnalyzerClient\LogAnalyzerClient.csproj" />
     <ProjectReference Include="..\LogAnalyzerRpc\LogAnalyzerRpc.csproj" />
     <ProjectReference Include="..\LogAnalyzer\LogAnalyzer.csproj" />
     <ProjectReference Include="..\LogParser\LogParser.csproj" />

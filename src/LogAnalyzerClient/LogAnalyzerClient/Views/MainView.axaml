@@ -4,6 +4,7 @@
                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
                 xmlns:vm="using:LogAnalyzerClient.ViewModels"
                 xmlns:models="using:LogAnalyzerClient.Models"
+                xmlns:controls="using:LogAnalyzerClient.Controls"
                 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
                 x:Class="LogAnalyzerClient.Views.MainView"
                 x:DataType="vm:MainViewModel">
@@ -13,7 +14,127 @@ to set the actual DataContext for runtime, set the DataContext property in code 
         <vm:MainViewModel />
     </Design.DataContext>
 
-    <DockPanel>
+    <DockPanel Container.Name="MainViewport" Container.Sizing="Width">
+        <DockPanel.Styles>
+            <!-- Wide layout is the default. The compact query only changes presentation. -->
+            <Style Selector="ScrollViewer.page-scroller">
+                <Setter Property="HorizontalScrollBarVisibility" Value="Disabled" />
+                <Setter Property="VerticalScrollBarVisibility" Value="Disabled" />
+            </Style>
+
+            <Style Selector="Grid.page-layout">
+                <Setter Property="Margin" Value="16" />
+                <Setter Property="RowSpacing" Value="10" />
+            </Style>
+            <Style Selector="StackPanel.page-header">
+                <Setter Property="Grid.Row" Value="0" />
+            </Style>
+            <Style Selector="Border.directory-card">
+                <Setter Property="Grid.Row" Value="1" />
+            </Style>
+            <Style Selector="Grid.directory-toolbar">
+                <Setter Property="ColumnSpacing" Value="5" />
+                <Setter Property="RowSpacing" Value="5" />
+            </Style>
+            <Style Selector="TextBlock.directory-label">
+                <Setter Property="Grid.Row" Value="0" />
+                <Setter Property="Grid.Column" Value="0" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+            <Style Selector="TextBox.directory-input">
+                <Setter Property="Grid.Row" Value="0" />
+                <Setter Property="Grid.Column" Value="1" />
+            </Style>
+            <Style Selector="Grid.directory-buttons">
+                <Setter Property="Grid.Row" Value="0" />
+                <Setter Property="Grid.Column" Value="2" />
+            </Style>
+
+            <Style Selector="Grid.main-content">
+                <Setter Property="Grid.Row" Value="2" />
+                <Setter Property="Margin" Value="0,10" />
+                <Setter Property="ColumnSpacing" Value="15" />
+                <Setter Property="RowSpacing" Value="0" />
+            </Style>
+            <Style Selector="Border.log-files-card">
+                <Setter Property="Grid.Row" Value="0" />
+                <Setter Property="Grid.Column" Value="0" />
+                <Setter Property="Grid.RowSpan" Value="2" />
+            </Style>
+            <Style Selector="Border.results-card">
+                <Setter Property="Grid.Row" Value="0" />
+                <Setter Property="Grid.Column" Value="1" />
+                <Setter Property="Grid.RowSpan" Value="2" />
+            </Style>
+
+            <Style Selector="Grid.analysis-toolbar">
+                <Setter Property="ColumnSpacing" Value="10" />
+                <Setter Property="RowSpacing" Value="5" />
+            </Style>
+            <Style Selector="Grid.dop-group">
+                <Setter Property="Grid.Row" Value="0" />
+                <Setter Property="Grid.Column" Value="0" />
+            </Style>
+            <Style Selector="Grid.analyze-group">
+                <Setter Property="Grid.Row" Value="0" />
+                <Setter Property="Grid.Column" Value="1" />
+            </Style>
+
+            <ContainerQuery Name="MainViewport" Query="max-width:640">
+                <Style Selector="ScrollViewer.page-scroller">
+                    <Setter Property="VerticalScrollBarVisibility" Value="Auto" />
+                </Style>
+                <Style Selector="Grid.page-layout">
+                    <Setter Property="Margin" Value="8" />
+                </Style>
+
+                <Style Selector="TextBlock.directory-label">
+                    <Setter Property="Grid.Row" Value="0" />
+                    <Setter Property="Grid.Column" Value="0" />
+                    <Setter Property="Grid.ColumnSpan" Value="3" />
+                </Style>
+                <Style Selector="TextBox.directory-input">
+                    <Setter Property="Grid.Row" Value="1" />
+                    <Setter Property="Grid.Column" Value="0" />
+                    <Setter Property="Grid.ColumnSpan" Value="3" />
+                </Style>
+                <Style Selector="Grid.directory-buttons">
+                    <Setter Property="Grid.Row" Value="2" />
+                    <Setter Property="Grid.Column" Value="0" />
+                    <Setter Property="Grid.ColumnSpan" Value="3" />
+                </Style>
+
+                <Style Selector="Grid.main-content">
+                    <Setter Property="ColumnSpacing" Value="0" />
+                    <Setter Property="RowSpacing" Value="10" />
+                </Style>
+                <Style Selector="Border.log-files-card">
+                    <Setter Property="Grid.Row" Value="0" />
+                    <Setter Property="Grid.Column" Value="0" />
+                    <Setter Property="Grid.RowSpan" Value="1" />
+                    <Setter Property="Grid.ColumnSpan" Value="2" />
+                    <Setter Property="MinHeight" Value="220" />
+                </Style>
+                <Style Selector="Border.results-card">
+                    <Setter Property="Grid.Row" Value="1" />
+                    <Setter Property="Grid.Column" Value="0" />
+                    <Setter Property="Grid.RowSpan" Value="1" />
+                    <Setter Property="Grid.ColumnSpan" Value="2" />
+                    <Setter Property="MinHeight" Value="460" />
+                </Style>
+
+                <Style Selector="Grid.analysis-toolbar">
+                    <Setter Property="ColumnSpacing" Value="0" />
+                </Style>
+                <Style Selector="Grid.analyze-group">
+                    <Setter Property="Grid.Row" Value="1" />
+                    <Setter Property="Grid.Column" Value="0" />
+                    <Setter Property="Grid.ColumnSpan" Value="2" />
+                    <Setter Property="Margin" Value="0,5,0,0" />
+                </Style>
+            </ContainerQuery>
+        </DockPanel.Styles>
+
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="File(_F)">
                 <MenuItem Header="Connect...(_C)" Command="{Binding ConnectCommand}" />
@@ -28,26 +149,20 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                 Padding="10"
                 BorderThickness="1,1,0,0"
                 BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}">
-            <StackPanel Orientation="Horizontal" FlowDirection="LeftToRight">
-                <TextBlock Text="[Status] " />
-                <TextBlock Text="{Binding ConnectStatus}" />
-                <TextBlock Text="Agent address: " />
-                <TextBlock Text="{Binding CurrentAddress}" />
-                <TextBlock Text="; Current Directory: " />
-                <TextBlock Text="{Binding DirectoryPath}" />
-            </StackPanel>
+            <TextBlock TextWrapping="Wrap">
+                <Run Text="[Status] " />
+                <Run Text="{Binding ConnectStatus}" />
+                <Run Text="; Agent address: " />
+                <Run Text="{Binding CurrentAddress}" />
+                <Run Text="; Current Directory: " />
+                <Run Text="{Binding DirectoryPath}" />
+            </TextBlock>
         </Border>
 
-        <Grid Margin="16" RowSpacing="10">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
-            </Grid.RowDefinitions>
-
+        <ScrollViewer Classes="page-scroller">
+        <Grid Classes="page-layout" RowDefinitions="Auto,Auto,*">
             <StackPanel
-                Grid.Row="0"
-                Grid.Column="0"
+                Classes="page-header"
                 Spacing="4"
             >
                 <TextBlock Classes="TitleText" Text="LogAnalyzerClient" />
@@ -55,41 +170,48 @@ to set the actual DataContext for runtime, set the DataContext property in code 
             </StackPanel>
 
             <Border
-                Grid.Row="1"
-                Grid.Column="0"
-                Classes="Card"
+                Classes="Card directory-card"
             >
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="5" RowSpacing="5">
-                    <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="Directory Path" />
-                    <TextBox Grid.Row="0" Grid.Column="1"
+                <Grid Classes="directory-toolbar"
+                      ColumnDefinitions="Auto,*,Auto"
+                      RowDefinitions="Auto,Auto,Auto">
+                    <TextBlock Classes="directory-label" Text="Directory Path" />
+                    <TextBox Classes="directory-input"
                              Text="{Binding DirectoryPath, Mode=OneWayToSource}"
                              PlaceholderText="Input the directory path on the node" />
-                    <Button Grid.Row="0" Grid.Column="2" Classes="SecondaryButton" Content="Change Directory" Command="{Binding ChangeDirectoryCommand}" />
-                    <Button Grid.Row="0" Grid.Column="3" Classes="SecondaryButton" Content="Refresh" Command="{Binding RefreshCommand}" />
+                    <Grid Classes="directory-buttons" ColumnDefinitions="*,*" ColumnSpacing="5">
+                        <Button Grid.Column="0" Classes="SecondaryButton" Content="Change Directory" Command="{Binding ChangeDirectoryCommand}" />
+                        <Button Grid.Column="1" Classes="SecondaryButton" Content="Refresh" Command="{Binding RefreshCommand}" />
+                    </Grid>
                 </Grid>
             </Border>
 
-            <Grid Grid.Row="2" Margin="0,10,0,10" ColumnSpacing="15">
+            <Grid Classes="main-content" RowDefinitions="*,*">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="2*" MaxWidth="360" MinWidth="50" />
                     <ColumnDefinition Width="3*" />
                 </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Classes="Card">
+                <Border Classes="Card log-files-card">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Top" Spacing="8">
                             <TextBlock Classes="SectionTitle" Text="Log Files" />
                             <TextBlock Classes="SubtleText" Text="Supports multiple selection (hold Ctrl). Right-click to view analysis results for the currently selected files." TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                                <TextBlock Grid.Column="0" Margin="0,0,5,0" VerticalAlignment="Center" Text="DoP" />
-                                <TextBox Name="DegreeTextBox"
-                                         Grid.Column="1"
-                                         Classes="NumericInput"
-                                         Text="{Binding DegreeOfParallelismText}"
-                                         PlaceholderText="Degree of Parallelism" />
-                                <TextBlock Grid.Column="2" Margin="10,0,5,0" VerticalAlignment="Center" Text="Analyze" />
-                                <Button Grid.Column="3" Content="Selected" Command="{Binding AnalyzeSelectedFilesCommand}" />
-                                <!-- TODO: T4.1 -->
-                                <!-- Add "All" button -->
+                            <Grid Classes="analysis-toolbar"
+                                  ColumnDefinitions="*,Auto"
+                                  RowDefinitions="Auto,Auto">
+                                <Grid Classes="dop-group" ColumnDefinitions="Auto,*" ColumnSpacing="5">
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="DoP" />
+                                    <TextBox Name="DegreeTextBox"
+                                             Grid.Column="1"
+                                             Classes="NumericInput"
+                                             Text="{Binding DegreeOfParallelismText}"
+                                             PlaceholderText="Degree of Parallelism" />
+                                </Grid>
+                                <Grid Classes="analyze-group" ColumnDefinitions="Auto,*,*" ColumnSpacing="5">
+                                    <TextBlock Grid.Column="0" VerticalAlignment="Center" Text="Analyze" />
+                                    <Button Grid.Column="1" Content="Selected" Command="{Binding AnalyzeSelectedFilesCommand}" />
+                                    <Button Grid.Column="2" Content="All" Command="{Binding AnalyzeAllCommand}" />
+                                </Grid>
                             </Grid>
                         </StackPanel>
 
@@ -105,6 +227,8 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                                 <ContextMenu>
                                     <MenuItem Header="Analyze File(_A)" Command="{Binding AnalyzeRightClickedFileCommand}"/>
                                     <MenuItem Header="View Analysis Results(_V)" Command="{Binding GetAnalysisResultCommand}" />
+                                    <Separator />
+                                    <MenuItem Header="View Service Topology(_T)" Command="{Binding ShowServiceTopologyCommand}" />
                                 </ContextMenu>
                             </ListBox.ContextMenu>
                             <ListBox.ItemTemplate>
@@ -116,29 +240,87 @@ to set the actual DataContext for runtime, set the DataContext property in code 
                     </DockPanel>
                 </Border>
 
-                <Border Grid.Column="1" Classes="Card">
-                    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="5">
-                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
-                            <TextBlock Classes="SectionTitle" Text="Analysis Result" />
-                        </StackPanel>
+                <Border Classes="Card results-card">
+                    <TabControl SelectedIndex="{Binding SelectedResultTabIndex, Mode=TwoWay}">
+                        <TabItem Header="Analysis Result">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="8">
+                                <TextBlock Grid.Row="0" Classes="SectionTitle" Text="Analysis Result" />
 
-                        <TextBlock Grid.Row="1"
-                                   Classes="SubtleText"
-                                   Text="Analysis results. Each line is a single log entry."
-                                   TextWrapping="Wrap" />
+                                <TextBlock Grid.Row="1"
+                                           Classes="SubtleText"
+                                           Text="Filter entries by type. Call count is the number of calls received by the same target service."
+                                           TextWrapping="Wrap" />
 
-                        <ListBox Name="ResultEntryListBox"
-                                Grid.Row="2"
-                                ItemsSource="{Binding ResultEntries, Mode=OneWay}">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate x:DataType="models:LogFields">
-                                    <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                    </Grid>
+                                <StackPanel Grid.Row="2"
+                                            Orientation="Horizontal"
+                                            Spacing="8">
+                                    <TextBlock VerticalAlignment="Center" Text="Log type" />
+                                    <ComboBox MinWidth="100"
+                                              ItemsSource="{Binding LogTypeOptions, Mode=OneWay}"
+                                              SelectedItem="{Binding SelectedLogType, Mode=TwoWay}" />
+                                    <TextBlock VerticalAlignment="Center" Text="Call count" />
+                                    <ComboBox MinWidth="110"
+                                              ItemsSource="{Binding CallCountSortOptions, Mode=OneWay}"
+                                              SelectedItem="{Binding SelectedCallCountSort, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsCallCountSortEnabled, Mode=OneWay}" />
+                                </StackPanel>
+
+                                <TextBlock Grid.Row="3"
+                                           Classes="SubtleText"
+                                           Text="{Binding AnalysisStatus, Mode=OneWay}"
+                                           TextWrapping="Wrap" />
+
+                                <ListBox Name="ResultEntryListBox"
+                                         Grid.Row="4"
+                                         ItemsSource="{Binding ResultEntries, Mode=OneWay}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:LogFields">
+                                            <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </TabItem>
+
+                        <TabItem Header="Service Topology">
+                            <Grid RowDefinitions="Auto,*,Auto,2*" RowSpacing="8">
+                                <StackPanel Grid.Row="0" Spacing="2">
+                                    <TextBlock Classes="SectionTitle" Text="Service Topology" />
+                                    <TextBlock Classes="SubtleText"
+                                               Text="Nodes are services; arrows are calls. Click an edge count to load its logs."
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+
+                                <ScrollViewer Grid.Row="1"
+                                              MinHeight="220"
+                                              HorizontalScrollBarVisibility="Auto"
+                                              VerticalScrollBarVisibility="Auto">
+                                    <controls:TopologyGraphControl
+                                        Nodes="{Binding TopologyNodes, Mode=OneWay}"
+                                        Edges="{Binding TopologyEdges, Mode=OneWay}"
+                                        EdgeSelectedCommand="{Binding GetTopologyEdgeLogsCommand, Mode=OneWay}" />
+                                </ScrollViewer>
+
+                                <TextBlock Grid.Row="2"
+                                           Classes="SubtleText"
+                                           Text="{Binding TopologyStatus, Mode=OneWay}"
+                                           TextWrapping="Wrap" />
+
+                                <ListBox Grid.Row="3"
+                                         MinHeight="120"
+                                         ItemsSource="{Binding TopologyEdgeLogEntries, Mode=OneWay}">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate x:DataType="models:LogFields">
+                                            <TextBlock Text="{Binding Summary, Mode=OneWay}" TextWrapping="NoWrap" />
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </Grid>
+                        </TabItem>
+                    </TabControl>
                 </Border>
             </Grid>
         </Grid>
+        </ScrollViewer>
     </DockPanel>
 </UserControl>
