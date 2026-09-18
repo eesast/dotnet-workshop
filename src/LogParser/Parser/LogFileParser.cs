@@ -1,7 +1,7 @@
 ﻿using CsvHelper;
-using CsvHelper.Configuration;
 using LogParser.Models;
 using System.Globalization;
+using CsvHelper.Configuration;
 
 namespace LogParser.Parser
 {
