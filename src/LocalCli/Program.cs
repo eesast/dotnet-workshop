@@ -112,22 +112,83 @@ namespace LocalCli
 
         private static void ShowLogFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            var files = analyzer.GetLogFiles();
+            Console.WriteLine("Log files:");
+            foreach (var file in files)
+            {
+                Console.WriteLine($" - {file}");
+            }
         }
 
         private static void AnalyzeFiles(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Please input file names separated by comma (e.g. log1.log,log2.log):");
+            var input = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(input)) return;
+
+            var fileNames = input.Split(',').Select(s => s.Trim());
+            try
+            {
+                // 调用分析方法
+                analyzer.AnalyzeFiles(0, fileNames);
+                Console.WriteLine("Analysis finished.");
+            }
+            catch (Exception ex)
+            {
+                // 鲁棒性：捕获异常并提示用户，而不是让程序崩溃
+                Console.WriteLine($"Analysis failed: {ex.Message}");
+            }
         }
 
         private static void AnalyzeAll(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            try
+            {
+                analyzer.AnalyzeAll(0);
+                Console.WriteLine("All files analysis finished.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Analysis failed: {ex.Message}");
+            }
         }
 
         private static void GetAnalysisResult(LogFileAnalyzer analyzer)
         {
-            throw new NotImplementedException("T2.3");
+            Console.WriteLine("Please input file name:");
+            var fileName = Console.ReadLine()?.Trim();
+            if (string.IsNullOrEmpty(fileName)) return;
+
+            if (analyzer.TryGetAnalysisResult(fileName, out var result))
+            {
+                // 根据状态分流处理
+                if (result!.State == AnalysisState.NotAnalyzed)
+                {
+                    Console.WriteLine("File has not been analyzed.");
+                }
+                else if (result.State == AnalysisState.Failed)
+                {
+                    Console.WriteLine($"Analysis failed: {result.ErrorMessage}");
+                }
+                else
+                {
+                    // 使用 Visitor 输出
+                    var visitor = new KeyValueVisitor();
+                    foreach (var entry in result.Entries)
+                    {
+                        var dict = visitor.Dump(entry);
+                        foreach (var kv in dict)
+                        {
+                            Console.WriteLine($"  {kv.Key}: {kv.Value}");
+                        }
+                        Console.WriteLine();  // 每条日志间空一行
+                    }
+                }
+            }
+            else
+            {
+                Console.WriteLine("File not found.");
+            }
         }
     }
 }
